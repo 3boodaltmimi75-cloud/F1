@@ -9,239 +9,328 @@
 
 ]]--
 
-local obf_stringchar = string.char;
-local obf_stringbyte = string.byte;
-local obf_stringsub = string.sub;
-local obf_bitlib = bit32 or bit;
-local obf_XOR = obf_bitlib.bxor;
-local obf_tableconcat = table.concat;
-local obf_tableinsert = table.insert;
-local function LUAOBFUSACTOR_DECRYPT_STR_0(LUAOBFUSACTOR_STR, LUAOBFUSACTOR_KEY)
-	local result = {};
-	for i = 1, #LUAOBFUSACTOR_STR do
-		obf_tableinsert(result, obf_stringchar(obf_XOR(obf_stringbyte(obf_stringsub(LUAOBFUSACTOR_STR, i, i + 1)), obf_stringbyte(obf_stringsub(LUAOBFUSACTOR_KEY, 1 + (i % #LUAOBFUSACTOR_KEY), 1 + (i % #LUAOBFUSACTOR_KEY) + 1))) % 256));
+bit32 = {};
+local N = 32;
+local P = 2 ^ N;
+bit32.bnot = function(x)
+	x = x % P;
+	return (P - 1) - x;
+end;
+bit32.band = function(x, y)
+	if (y == 255) then
+		return x % 256;
 	end
-	return obf_tableconcat(result);
-end
-local v0 = {};
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\222\193\221\26\228\178\211\18\216\193\158\117", "\126\177\163\187\69\134\219\167")] = bit32 or bit;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\44\207\44\250\196\12\255\111\149", "\156\67\173\74\165")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\59\181\79\41\190\47\82\56\190\75\83\236", "\38\84\215\41\118\220\70")].bxor;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\95\20\36\45\209\98\83\114", "\158\48\118\66\114")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\164\38\22\9\113\172\239\167\45\18\115\35", "\155\203\68\112\86\19\197")].bor;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\73\223\48\195\97\86\193\189\22", "\152\38\189\86\156\32\24\133")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\243\85\161\121\254\94\179\74\245\85\226\22", "\38\156\55\199")].band;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\154\120\108\36\26\119\251\87\173\121\79\60\28\102\251\68\173\56\44", "\35\200\29\28\72\115\20\154")] = game:GetService(LUAOBFUSACTOR_DECRYPT_STR_0("\43\186\193\211\132\47\53\13\186\213\236\153\35\38\24\184\212", "\84\121\223\177\191\237\76"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\141\95\219\180\47\81\60\232\181\70\220\180\23\81\62\192\188\83\219\229\106", "\161\219\54\169\192\90\48\80")] = game:GetService(LUAOBFUSACTOR_DECRYPT_STR_0("\127\75\18\49\92\67\12\12\71\82\21\49\100\67\14\36\78\71\18", "\69\41\34\96"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\137\208\210\24\43\37\172\214\195\57\7\57\170\202\212\15\71\123", "\75\220\163\183\106\98")] = game:GetService(LUAOBFUSACTOR_DECRYPT_STR_0("\55\169\142\37\240\12\170\158\35\234\7\168\157\62\218\7", "\185\98\218\235\87"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\255\43\34\227\208\153\206\46\49\239\221\175\142\108", "\202\171\92\71\134\190")] = game:GetService(LUAOBFUSACTOR_DECRYPT_STR_0("\29\214\41\141\39\242\41\154\63\200\47\141", "\232\73\161\76"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\139\213\67\68\27\169\202\7\13", "\126\219\185\34\61")] = game:GetService(LUAOBFUSACTOR_DECRYPT_STR_0("\60\194\95\107\123\101\224", "\135\108\174\62\18\30\23\147"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\154\230\41\202\20\158\63\198\175\236\56\142\72", "\167\214\137\74\171\120\206\83")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\187\252\51\68\253\181\152\181\98", "\199\235\144\82\61\152")].LocalPlayer;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\55\26\184\50\2\4\158\62\14\83\233", "\75\103\118\217")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\235\91\115\21\181\46\203\85\105\17\171\91\151", "\126\167\52\16\116\217")]:WaitForChild(LUAOBFUSACTOR_DECRYPT_STR_0("\248\34\33\153\177\11\219\221\39", "\156\168\78\64\224\212\121"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\34\232\163\203\4\250\131\193\11\234\160\220\66\190", "\174\103\142\197")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\100\45\79\52\44\93\249\66\45\91\11\49\81\234\87\47\90\125\117", "\152\54\72\63\88\69\62")]:FindFirstChild(LUAOBFUSACTOR_DECRYPT_STR_0("\241\194\232\89\215\208", "\60\180\164\142"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\122\87\11\45\38\239\30\93\27\85", "\114\56\62\101\73\71\141")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\157\239\221\193\187\253\253\203\180\237\222\214\253\185", "\164\216\137\187")] and v0[LUAOBFUSACTOR_DECRYPT_STR_0("\247\224\55\183\165\234\45\221\234\53\183\180\187\91", "\107\178\134\81\210\198\158")]:FindFirstChild(LUAOBFUSACTOR_DECRYPT_STR_0("\26\7\140\194\171\58\2\135", "\202\88\110\226\166"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\240\0\144\226\143\147", "\170\163\111\226\151")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\52\54\180\61\77\35\15\30\60\182\61\92\114\121", "\73\113\80\210\88\46\87")] and v0[LUAOBFUSACTOR_DECRYPT_STR_0("\164\42\203\23\228\149\10\194\30\227\132\62\136\66", "\135\225\76\173\114")]:FindFirstChild(LUAOBFUSACTOR_DECRYPT_STR_0("\57\226\182\164\173\180\169\31\255", "\199\122\141\216\208\204\221")) and v0[LUAOBFUSACTOR_DECRYPT_STR_0("\136\219\22\245\123\226\139\210\28\244\125\228\232\141", "\150\205\189\112\144\24")].Container:FindFirstChild(LUAOBFUSACTOR_DECRYPT_STR_0("\22\140\190\94\1\140", "\112\69\228\223\44\100\232\113")) and v0[LUAOBFUSACTOR_DECRYPT_STR_0("\241\25\1\214\181\104\160\219\19\3\214\164\57\214", "\230\180\127\103\179\214\28")].Container.Shared:FindFirstChild(LUAOBFUSACTOR_DECRYPT_STR_0("\191\10\77\83", "\128\236\101\63\38\132\33"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\159\162\24\72\186\248\227\165\186\5\1\230", "\175\204\201\113\36\214\139")] = {"Z","X","C"};
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\100\217\39\206\1\73\216\6\215\13\75\192\28\210\0\66\212\112\140", "\100\39\172\85\188")] = 1;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\158\125\181\133\48\185\125\189\179\56\164\116\181\197\99", "\83\205\24\217\224")] = Enum.KeyCode[v0[LUAOBFUSACTOR_DECRYPT_STR_0("\213\206\196\49\234\214\225\52\245\209\136\109", "\93\134\165\173")][v0[LUAOBFUSACTOR_DECRYPT_STR_0("\157\231\211\208\63\192\166\77\181\251\205\206\19\192\182\123\166\183\145", "\30\222\146\161\162\90\174\210")]]];
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\214\69\121\6\233\107\126\11\231\66\117\14\160\30", "\106\133\46\16")] = true;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\81\51\86\228\95\67\77\52\122\242\93\5\8", "\32\56\64\19\156\58")] = false;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\105\203\247\83\95\252\167\79\193\160\6", "\224\58\168\133\54\58\146")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\106\85\89\248\112\136\160\30\80", "\107\57\54\43\157\21\230\231"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\232\136\3\240\188\210\232\206\130\84\165", "\175\187\235\113\149\217\188")].Name = LUAOBFUSACTOR_DECRYPT_STR_0("\9\163\149\94\226\74\119\46\186\166\121\202", "\24\92\207\225\44\131\25");
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\120\208\170\73\30\115\108\198\177\9\75", "\29\43\179\216\44\123")].ResetOnSpawn = false;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\142\218\50\73\184\215\7\89\180\156\112", "\44\221\185\64")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\49\235\73\70\118\19\192\93\86\54\81", "\19\97\135\40\63")];
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\131\93\58\53\9\35\175\81\54\126\127", "\81\206\60\83\91\79")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\104\185\209\127\42", "\196\46\203\176\18\79\163\45"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\149\35\119\16\2\233\238\181\39\59\78", "\143\216\66\30\126\68\155")].Size = UDim2.new(0, 230, 0, 190);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\135\201\4\197\227\177\214\236\175\141\93", "\129\202\168\109\171\165\195\183")].Position = UDim2.new(0.5, -115, 0.4, -95);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\15\89\62\214\248\6\231\47\93\114\136", "\134\66\56\87\184\190\116")].BackgroundColor3 = Color3.fromRGB(15, 15, 20);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\17\48\0\181\63\249\32\56\57\116\89", "\85\92\81\105\219\121\139\65")].BorderColor3 = Color3.fromRGB(60, 60, 80);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\208\178\89\75\90\205\252\190\85\0\44", "\191\157\211\48\37\28")].BorderSizePixel = 1;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\242\30\253\18\28\205\30\249\25\127\143", "\90\191\127\148\124")].Active = true;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\85\134\39\25\94\149\47\26\125\194\126", "\119\24\231\78")].Draggable = true;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\175\44\172\68\250\82\16\143\40\224\26", "\113\226\77\197\42\188\32")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\9\21\230\176\63\24\211\160\51\83\164", "\213\90\118\148")];
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\110\7\151\89\95\85\43\166\123\76\82\32\241\6", "\45\59\78\212\54")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\37\127\160\132\148\32\168\226", "\144\112\54\227\235\230\78\205"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\134\1\44\243\194\85\182\58\34\253\217\85\246\120", "\59\211\72\111\156\176")].CornerRadius = UDim.new(0, 12);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\123\174\192\34\92\137\230\63\99\134\234\35\11\215", "\77\46\231\131")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\151\85\191\78\156\70\183\77\191\17\230", "\32\218\52\214")];
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\122\30\37\164\244\245\21", "\58\46\119\81\200\145\208\37")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\31\137\40\184\133\188\52\46\128", "\86\75\236\80\204\201\221"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\70\72\99\137\251\206\34", "\235\18\33\23\229\158")].Size = UDim2.new(1, 0, 0, 34);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\100\179\213\183\85\255\145", "\219\48\218\161")].BackgroundColor3 = Color3.fromRGB(22, 22, 30);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\208\120\104\69\222\10\176", "\128\132\17\28\41\187\47")].BorderSizePixel = 0;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\53\59\18\54\88\68\98", "\61\97\82\102\90")].Text = "⚡ [ ERT // (L) HIDE ] ⚡";
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\152\39\191\71\194\18\78", "\105\204\78\203\43\167\55\126")].TextColor3 = Color3.fromRGB(255, 204, 0);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\145\163\55\18\22\65\151", "\49\197\202\67\126\115\100\167")].TextSize = 11;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\3\82\203\37\133\19\14", "\62\87\59\191\73\224\54")].Font = Enum.Font.Code;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\211\11\238\197\226\71\170", "\169\135\98\154")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\230\118\45\90\219\33\201\198\114\97\4", "\168\171\23\68\52\157\83")];
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\193\88\214\162\55\35\130\230\69\252\185\41\40\194\164", "\231\148\17\149\205\69\77")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\181\142\228\244\69\241\133\181", "\159\224\199\167\155\55"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\194\218\31\221\229\253\57\192\195\250\40\222\242\182\108", "\178\151\147\92")].CornerRadius = UDim.new(0, 12);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\185\212\111\61\0\66\127\158\201\69\38\30\73\63\220", "\26\236\157\44\82\114\44")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\30\39\193\87\47\107\133", "\59\74\78\181")];
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\22\198\83\78\176\45\243\78\84\246\117", "\211\69\177\58\58")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\131\224\97\225\203\222\163\241\118\251", "\171\215\133\25\149\137"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\210\223\59\238\236\56\222\86\239\141\98", "\34\129\168\82\154\143\80\156")].Size = UDim2.new(1, -24, 0, 36);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\182\165\58\31\75\70\171\145\188\118\91", "\233\229\210\83\107\40\46")].Position = UDim2.new(0, 12, 0, 46);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\242\85\59\194\6\201\96\38\216\64\145", "\101\161\34\82\182")].BackgroundColor3 = Color3.fromRGB(0, 168, 84);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\219\26\80\234\216\234\160\58\230\72\9", "\78\136\109\57\158\187\130\226")].BorderSizePixel = 0;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\13\40\240\229\61\55\219\229\48\122\169", "\145\94\95\153")].Text = LUAOBFUSACTOR_DECRYPT_STR_0("\220\248\32\250\14\132\214\228\56\249\20\247\198\226\58\232\14\255\205\132", "\215\157\173\116\181\46");
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\6\163\130\230\217\61\150\159\252\159\101", "\186\85\212\235\146")].TextColor3 = Color3.fromRGB(255, 255, 255);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\241\150\31\234\58\230\122\214\143\83\174", "\56\162\225\118\158\89\142")].TextSize = 12;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\111\18\201\187\33\208\126\17\206\234\114", "\184\60\101\160\207\66")].Font = Enum.Font.Code;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\2\149\117\168\50\138\94\168\63\199\44", "\220\81\226\28")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\62\212\139\245\204\213\18\216\135\190\186", "\167\115\181\226\155\138")];
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\215\11\196\83\105\127\195\240\0\243\82\62\33", "\166\130\66\135\60\27\17")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\113\99\237\122\34\74\79\220", "\80\36\42\174\21"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\123\57\20\117\92\30\50\104\108\4\57\63\30", "\26\46\112\87")].CornerRadius = UDim.new(0, 8);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\140\10\136\123\173\177\64\166\155\55\165\49\239", "\212\217\67\203\20\223\223\37")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\137\154\161\198\185\133\138\198\180\200\248", "\178\218\237\200")];
-local function v29()
-	if v0[LUAOBFUSACTOR_DECRYPT_STR_0("\133\190\239\220\186\144\232\209\180\185\227\212\243\229", "\176\214\213\134")] then
-		v0[LUAOBFUSACTOR_DECRYPT_STR_0("\199\186\191\192\171\94\123\224\163\243\132", "\57\148\205\214\180\200\54")].Text = LUAOBFUSACTOR_DECRYPT_STR_0("\51\200\1\27\54\33\214\28\24\90\72\189\14\27\88\47\189\125\4\63", "\22\114\157\85\84");
-		v0[LUAOBFUSACTOR_DECRYPT_STR_0("\247\220\26\208\94\254\138\208\197\86\148", "\200\164\171\115\164\61\150")].BackgroundColor3 = Color3.fromRGB(0, 168, 84);
+	if (y == 65535) then
+		return x % 65536;
+	end
+	if (y == 4294967295) then
+		return x % 4294967296;
+	end
+	x, y = x % P, y % P;
+	local r = 0;
+	local p = 1;
+	for i = 1, N do
+		local a, b = x % 2, y % 2;
+		x, y = math.floor(x / 2), math.floor(y / 2);
+		if ((a + b) == 2) then
+			r = r + p;
+		end
+		p = 2 * p;
+	end
+	return r;
+end;
+bit32.bor = function(x, y)
+	if (y == 255) then
+		return (x - (x % 256)) + 255;
+	end
+	if (y == 65535) then
+		return (x - (x % 65536)) + 65535;
+	end
+	if (y == 4294967295) then
+		return 4294967295;
+	end
+	x, y = x % P, y % P;
+	local r = 0;
+	local p = 1;
+	for i = 1, N do
+		local a, b = x % 2, y % 2;
+		x, y = math.floor(x / 2), math.floor(y / 2);
+		if ((a + b) >= 1) then
+			r = r + p;
+		end
+		p = 2 * p;
+	end
+	return r;
+end;
+bit32.bxor = function(x, y)
+	x, y = x % P, y % P;
+	local r = 0;
+	local p = 1;
+	for i = 1, N do
+		local a, b = x % 2, y % 2;
+		x, y = math.floor(x / 2), math.floor(y / 2);
+		if ((a + b) == 1) then
+			r = r + p;
+		end
+		p = 2 * p;
+	end
+	return r;
+end;
+bit32.lshift = function(x, s_amount)
+	if (math.abs(s_amount) >= N) then
+		return 0;
+	end
+	x = x % P;
+	if (s_amount < 0) then
+		return math.floor(x * (2 ^ s_amount));
 	else
-		v0[LUAOBFUSACTOR_DECRYPT_STR_0("\141\227\10\81\128\182\214\23\75\198\238", "\227\222\148\99\37")].Text = LUAOBFUSACTOR_DECRYPT_STR_0("\18\103\102\217\185\0\121\123\218\213\105\18\105\217\223\21\111\18\190\201\122", "\153\83\50\50\150");
-		v0[LUAOBFUSACTOR_DECRYPT_STR_0("\110\97\122\8\112\163\111\73\120\54\76", "\45\61\22\19\124\19\203")].BackgroundColor3 = Color3.fromRGB(180, 45, 45);
+		return (x * (2 ^ s_amount)) % P;
+	end
+end;
+bit32.rshift = function(x, s_amount)
+	if (math.abs(s_amount) >= N) then
+		return 0;
+	end
+	x = x % P;
+	if (s_amount > 0) then
+		return math.floor(x * (2 ^ -s_amount));
+	else
+		return (x * (2 ^ -s_amount)) % P;
+	end
+end;
+bit32.arshift = function(x, s_amount)
+	if (math.abs(s_amount) >= N) then
+		return 0;
+	end
+	x = x % P;
+	if (s_amount > 0) then
+		local add = 0;
+		if (x >= (P / 2)) then
+			add = P - (2 ^ (N - s_amount));
+		end
+		return math.floor(x * (2 ^ -s_amount)) + add;
+	else
+		return (x * (2 ^ -s_amount)) % P;
+	end
+end;
+local ReplicatedStorage = game:GetService("ReplicatedStorage");
+local VirtualInputManager = game:GetService("VirtualInputManager");
+local UserInputService = game:GetService("UserInputService");
+local TweenService = game:GetService("TweenService");
+local Players = game:GetService("Players");
+local LocalPlayer = Players.LocalPlayer;
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui");
+local EffectFolder = ReplicatedStorage:FindFirstChild("Effect");
+local Bindable = EffectFolder and EffectFolder:FindFirstChild("Bindable");
+local Soru = EffectFolder and EffectFolder:FindFirstChild("Container") and EffectFolder.Container:FindFirstChild("Shared") and EffectFolder.Container.Shared:FindFirstChild("Soru");
+local SkillsList = {"Z","X","C"};
+local CurrentSkillIndex = 1;
+local SelectedSkill = Enum.KeyCode[SkillsList[CurrentSkillIndex]];
+local SkillEnabled = true;
+local isExecuting = false;
+local ScreenGui = Instance.new("ScreenGui");
+ScreenGui.Name = "UltraSoruGUI";
+ScreenGui.ResetOnSpawn = false;
+ScreenGui.Parent = PlayerGui;
+local MainFrame = Instance.new("Frame");
+MainFrame.Size = UDim2.new(0, 230, 0, 190);
+MainFrame.Position = UDim2.new(0.5, -115, 0.4, -95);
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20);
+MainFrame.BorderColor3 = Color3.fromRGB(60, 60, 80);
+MainFrame.BorderSizePixel = 1;
+MainFrame.Active = true;
+MainFrame.Draggable = true;
+MainFrame.Parent = ScreenGui;
+local UICornerMain = Instance.new("UICorner");
+UICornerMain.CornerRadius = UDim.new(0, 12);
+UICornerMain.Parent = MainFrame;
+local Title = Instance.new("TextLabel");
+Title.Size = UDim2.new(1, 0, 0, 34);
+Title.BackgroundColor3 = Color3.fromRGB(22, 22, 30);
+Title.BorderSizePixel = 0;
+Title.Text = "⚡ [ ERT // (L) HIDE ] ⚡";
+Title.TextColor3 = Color3.fromRGB(255, 204, 0);
+Title.TextSize = 11;
+Title.Font = Enum.Font.Code;
+Title.Parent = MainFrame;
+local UICornerTitle = Instance.new("UICorner");
+UICornerTitle.CornerRadius = UDim.new(0, 12);
+UICornerTitle.Parent = Title;
+local SwitchBtn = Instance.new("TextButton");
+SwitchBtn.Size = UDim2.new(1, -24, 0, 36);
+SwitchBtn.Position = UDim2.new(0, 12, 0, 46);
+SwitchBtn.BackgroundColor3 = Color3.fromRGB(0, 168, 84);
+SwitchBtn.BorderSizePixel = 0;
+SwitchBtn.Text = "AUTO SKILL: [ON] (P)";
+SwitchBtn.TextColor3 = Color3.fromRGB(255, 255, 255);
+SwitchBtn.TextSize = 12;
+SwitchBtn.Font = Enum.Font.Code;
+SwitchBtn.Parent = MainFrame;
+local UICornerBtn = Instance.new("UICorner");
+UICornerBtn.CornerRadius = UDim.new(0, 8);
+UICornerBtn.Parent = SwitchBtn;
+local updateSwitchButton;
+function v57()
+	if SkillEnabled then
+		SwitchBtn.Text = "AUTO SKILL: [ON] (P)";
+		SwitchBtn.BackgroundColor3 = Color3.fromRGB(0, 168, 84);
+	else
+		SwitchBtn.Text = "AUTO SKILL: [OFF] (P)";
+		SwitchBtn.BackgroundColor3 = Color3.fromRGB(180, 45, 45);
 	end
 end
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\242\5\4\225\1\120\155\213\28\72\165", "\217\161\114\109\149\98\16")].MouseButton1Click:Connect(function()
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\33\43\49\112\176\81\28\33\58\112\185\112\87\112", "\20\114\64\88\28\220")] = not v0[LUAOBFUSACTOR_DECRYPT_STR_0("\2\10\219\184\244\245\179\48\3\222\177\252\149\237", "\221\81\97\178\212\152\176")];
-	v29();
+SwitchBtn.MouseButton1Click:Connect(function()
+	SkillEnabled = not SkillEnabled;
+	updateSwitchButton();
 end);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\225\230\31\254\22\136\183", "\122\173\135\125\155")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\176\196\24\173\19\48\202\129\205", "\168\228\161\96\217\95\81"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\247\208\44\89\35\18\139", "\55\187\177\78\60\79")].Size = UDim2.new(1, 0, 0, 20);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\1\207\93\238\74\138\208", "\224\77\174\63\139\38\175")].Position = UDim2.new(0, 0, 0, 88);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\168\64\90\43\136\4\8", "\78\228\33\56")].BackgroundTransparency = 1;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\226\127\176\6\137\139\46", "\229\174\30\210\99")].Text = LUAOBFUSACTOR_DECRYPT_STR_0("\62\223\178\17\160\125\24\56\217\175\103\200\125\10\48\196\170\125\183", "\89\123\141\230\49\141\93");
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\223\112\244\9\28\15\163", "\42\147\17\150\108\112")].TextColor3 = Color3.fromRGB(140, 140, 165);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\35\167\47\122\235\173\95", "\136\111\198\77\31\135")].TextSize = 10;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\46\8\165\83\177\161\71", "\201\98\105\199\54\221\132\119")].Font = Enum.Font.Code;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\149\13\129\36\14\112\252", "\204\217\108\227\65\98\85")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\115\194\252\235\10\210\95\206\240\160\124", "\160\62\163\149\133\76")];
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\244\181\25\59\204\216\179\46\32\205\194\161\4\33\198\196\229\93", "\163\182\192\109\79")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\18\52\1\205\240", "\149\84\70\96\160"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\26\19\25\249\55\8\30\206\55\8\25\236\49\8\8\255\125\86", "\141\88\102\109")].Size = UDim2.new(0, 180, 0, 36);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\145\70\222\100\21\51\70\226\188\93\222\113\19\51\80\211\246\3", "\161\211\51\170\16\122\93\53")].Position = UDim2.new(0.5, -90, 0, 110);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\217\187\166\60\244\160\161\11\244\160\166\41\242\160\183\58\190\254", "\72\155\206\210")].BackgroundTransparency = 1;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\100\111\64\26\60\72\105\119\1\61\82\123\93\0\54\84\63\4", "\83\38\26\52\110")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\117\22\46\72\126\5\38\75\93\82\119", "\38\56\119\71")];
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\198\198\127\196\44\82\223\238\65\217\48\66\182\191", "\54\147\143\56\182\69")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\227\168\216\91\214\210\173\254\80\208\195\149", "\191\182\225\159\41"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\30\59\15\71\130\131\238\42\11\39\64\159\194\146", "\162\75\114\72\53\235\231")].CellSize = UDim2.new(0, 52, 0, 34);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\185\21\99\240\90\6\160\61\93\237\70\22\201\108", "\98\236\92\36\130\51")].CellPadding = UDim2.new(0, 12, 0, 0);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\145\48\43\168\76\172\153\49\189\22\25\174\0\248", "\80\196\121\108\218\37\200\213")].HorizontalAlignment = Enum.HorizontalAlignment.Center;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\53\90\37\109\66\10\166\1\106\13\106\95\75\218", "\234\96\19\98\31\43\110")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\36\10\70\211\163\124\152\37\16\92\211\173\123\133\3\13\23\151", "\235\102\127\50\167\204\18")];
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\67\170\252\47\72\12\69\181\225\44\74\61\21\241", "\78\48\193\149\67\36")] = {};
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\3\21\137\20\77\30\17\148\17\71\41\50\129\26\68\60\91\208", "\33\80\126\224\120")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\216\173\27\208\112\237\170\6\200", "\60\140\200\99\164"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\180\255\13\42\174\169\251\16\47\164\158\216\5\36\167\139\177\84", "\194\231\148\100\70")].Size = UDim2.new(0, 54, 0, 28);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\117\71\200\175\250\230\73\88\200\165\239\228\71\78\196\175\179\152", "\168\38\44\161\195\150")].BackgroundColor3 = Color3.fromRGB(18, 18, 25);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\179\247\139\122\60\198\185\2\137\250\155\90\49\234\179\26\197\172", "\118\224\156\226\22\80\136\214")].BorderColor3 = Color3.fromRGB(80, 80, 110);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\113\229\80\140\78\192\86\148\75\232\64\172\67\236\92\140\7\190", "\224\34\142\57")].BorderSizePixel = 1;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\237\172\204\209\127\223\82\26\215\161\220\241\114\243\88\2\155\247", "\110\190\199\165\189\19\145\61")].TextColor3 = Color3.fromRGB(0, 255, 170);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\233\224\126\228\135\233\213\255\126\238\146\235\219\233\114\228\206\151", "\167\186\139\23\136\235")].TextSize = 13;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\41\190\129\1\22\155\135\25\19\179\145\33\27\183\141\1\95\229", "\109\122\213\232")].Font = Enum.Font.Code;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\221\252\171\60\226\217\173\36\231\241\187\28\239\245\167\60\171\167", "\80\142\151\194")].Visible = false;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\48\205\126\64\15\232\120\88\10\192\110\96\2\196\114\64\70\150", "\44\99\166\23")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\79\244\59\51\54\170\91\226\32\115\99", "\196\28\151\73\86\83")];
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\224\8\32\28\142\118\23\98\250\5\48\36\149\93\29\120\182\83", "\22\147\99\73\112\226\56\120")] = nil;
-local function v37(v42)
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\181\122\247\230\136\136\122\241\176\221", "\237\216\21\130\149")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\183\93\90\77\153\199\78\151\90\108\90\162\223\87\129\75\26\15", "\62\226\46\63\63\208\169")]:GetMouseLocation();
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\214\18\92\143\19\35\32\74\236\31\76\175\30\15\42\82\160\73", "\62\133\121\53\227\127\109\79")].Position = UDim2.new(0, v0[LUAOBFUSACTOR_DECRYPT_STR_0("\31\22\52\202\247\128\134\85\68", "\194\112\116\82\149\182\206")](v0[LUAOBFUSACTOR_DECRYPT_STR_0("\52\167\89\11\197\210\1\42\237\28", "\110\89\200\44\120\160\130")].X, 15) + v0[LUAOBFUSACTOR_DECRYPT_STR_0("\164\193\77\121\108\120\126\29", "\45\203\163\43\38\35\42\91")](v0[LUAOBFUSACTOR_DECRYPT_STR_0("\223\138\201\48\130\153\91\193\192\140", "\52\178\229\188\67\231\201")].X, 15), 0, v0[LUAOBFUSACTOR_DECRYPT_STR_0("\44\78\69\23\242\108\44\50\4\0", "\67\65\33\48\100\151\60")].Y - 10);
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\236\236\167\212\255\241\232\186\209\245\198\203\175\218\246\211\162\254", "\147\191\135\206\184")].Text = LUAOBFUSACTOR_DECRYPT_STR_0("\161\26\146\155\152\104", "\210\228\72\198\161\184\51") .. v42 .. "]";
-	if v0[LUAOBFUSACTOR_DECRYPT_STR_0("\37\66\250\28\127\224\57\93\250\22\106\250\33\76\246\30\54\158", "\174\86\41\147\112\19")] then
-		v0[LUAOBFUSACTOR_DECRYPT_STR_0("\72\11\132\7\41\33\30\191\82\6\148\63\50\10\20\165\30\80", "\203\59\96\237\107\69\111\113")]:Cancel();
+local Label = Instance.new("TextLabel");
+Label.Size = UDim2.new(1, 0, 0, 20);
+Label.Position = UDim2.new(0, 0, 0, 88);
+Label.BackgroundTransparency = 1;
+Label.Text = "ERT - ACTIVE SKILL:";
+Label.TextColor3 = Color3.fromRGB(140, 140, 165);
+Label.TextSize = 10;
+Label.Font = Enum.Font.Code;
+Label.Parent = MainFrame;
+local ButtonsContainer = Instance.new("Frame");
+ButtonsContainer.Size = UDim2.new(0, 180, 0, 36);
+ButtonsContainer.Position = UDim2.new(0.5, -90, 0, 110);
+ButtonsContainer.BackgroundTransparency = 1;
+ButtonsContainer.Parent = MainFrame;
+local UIGridLayout = Instance.new("UIGridLayout");
+UIGridLayout.CellSize = UDim2.new(0, 52, 0, 34);
+UIGridLayout.CellPadding = UDim2.new(0, 12, 0, 0);
+UIGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center;
+UIGridLayout.Parent = ButtonsContainer;
+local skillButtons = {};
+local SkillNotifyLabel = Instance.new("TextLabel");
+SkillNotifyLabel.Size = UDim2.new(0, 54, 0, 28);
+SkillNotifyLabel.BackgroundColor3 = Color3.fromRGB(18, 18, 25);
+SkillNotifyLabel.BorderColor3 = Color3.fromRGB(80, 80, 110);
+SkillNotifyLabel.BorderSizePixel = 1;
+SkillNotifyLabel.TextColor3 = Color3.fromRGB(0, 255, 170);
+SkillNotifyLabel.TextSize = 13;
+SkillNotifyLabel.Font = Enum.Font.Code;
+SkillNotifyLabel.Visible = false;
+SkillNotifyLabel.Parent = ScreenGui;
+local skillNotifyTween = nil;
+local showSkillNotificationAtMouse;
+function v90(skillName)
+	local mousePos = UserInputService:GetMouseLocation();
+	SkillNotifyLabel.Position = UDim2.new(0, mousePos.X + 15, 0, mousePos.Y - 10);
+	SkillNotifyLabel.Text = "ERT: [" .. skillName .. "]";
+	if skillNotifyTween then
+		skillNotifyTween:Cancel();
 	end
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\23\29\165\237\61\222\216\48\31\170\248\29\241\213\33\26\233\177", "\183\68\118\204\129\81\144")].Visible = true;
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\61\166\121\232\7\172\1\185\121\226\18\174\15\175\117\232\78\210", "\226\110\205\16\132\107")].TextTransparency = 0;
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\216\200\233\213\77\197\204\244\208\71\242\239\225\219\68\231\134\176", "\33\139\163\128\185")].BackgroundTransparency = 0.2;
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\68\83\13\210\91\118\11\202\94\94\29\234\64\93\1\208\18\8", "\190\55\56\100")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\98\184\57\27\29\208\246\68\185\53\29\22\166\163", "\147\54\207\92\126\115\131")]:Create(v0["SkillNotifyLabel%0"], TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {[LUAOBFUSACTOR_DECRYPT_STR_0("\57\52\45\105\57\108\12\63\38\109\12\108\8\63\54\100", "\30\109\81\85\29\109")]=1,[LUAOBFUSACTOR_DECRYPT_STR_0("\221\112\87\189\49\204\243\234\127\80\130\36\223\242\236\97\85\164\51\208\255\230", "\156\159\17\52\214\86\190")]=1});
+	SkillNotifyLabel.Visible = true;
+	SkillNotifyLabel.TextTransparency = 0;
+	SkillNotifyLabel.BackgroundTransparency = 0.2;
+	skillNotifyTween = TweenService:Create(SkillNotifyLabel, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency=1,BackgroundTransparency=1});
 	task.delay(0.9, function()
-		if (v0[LUAOBFUSACTOR_DECRYPT_STR_0("\157\228\180\176\162\193\178\168\167\233\164\144\175\237\184\176\235\191", "\220\206\143\221")].TextTransparency == 0) then
-			v0[LUAOBFUSACTOR_DECRYPT_STR_0("\149\118\36\27\212\226\221\146\116\43\14\236\219\215\131\115\104\71", "\178\230\29\77\119\184\172")]:Play();
-			v0[LUAOBFUSACTOR_DECRYPT_STR_0("\230\181\3\23\123\214\250\170\3\29\110\204\226\187\15\21\50\168", "\152\149\222\106\123\23")].Completed:Connect(function()
-				if (v0[LUAOBFUSACTOR_DECRYPT_STR_0("\238\45\255\79\185\243\41\226\74\179\196\10\247\65\176\209\99\166", "\213\189\70\150\35")].TextTransparency >= 1) then
-					v0[LUAOBFUSACTOR_DECRYPT_STR_0("\124\94\125\4\67\123\123\28\70\83\109\36\78\87\113\4\10\5", "\104\47\53\20")].Visible = false;
+		if (SkillNotifyLabel.TextTransparency == 0) then
+			skillNotifyTween:Play();
+			skillNotifyTween.Completed:Connect(function()
+				if (SkillNotifyLabel.TextTransparency >= 1) then
+					SkillNotifyLabel.Visible = false;
 				end
 			end);
 		end
 	end);
 end
-local function v38(v46)
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\176\73\141\25\191\27\166\72\175\29\177\10\230\28", "\111\195\44\225\124\220")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\235\77\9\127\167\184\244\79\19\103\238\251", "\203\184\38\96\19\203")][v0[LUAOBFUSACTOR_DECRYPT_STR_0("\26\102\107\83\203\55\103\74\74\199\53\127\80\79\202\60\107\60\17", "\174\89\19\25\33")]];
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\28\23\94\75\244\147\14\43\33\89\71\251\139\78\127", "\107\79\114\50\46\151\231")] = Enum.KeyCode[v0[LUAOBFUSACTOR_DECRYPT_STR_0("\42\163\185\44\137\45\178\196\23\167\184\44\207\105", "\160\89\198\213\73\234\89\215")]];
-	for v63, v64 in pairs(v0[LUAOBFUSACTOR_DECRYPT_STR_0("\91\122\189\242\201\106\100\160\234\202\70\98\241\174", "\165\40\17\212\158")]) do
-		if (v63 == v0[LUAOBFUSACTOR_DECRYPT_STR_0("\246\220\4\54\37\241\220\12\29\39\232\220\77\99", "\70\133\185\104\83")]) then
-			v64.BackgroundColor3 = Color3.fromRGB(0, 200, 100);
+local updateSkillButtons;
+function v91(showPopup)
+	local selectedName = SkillsList[CurrentSkillIndex];
+	SelectedSkill = Enum.KeyCode[selectedName];
+	for name, button in pairs(skillButtons) do
+		if (name == selectedName) then
+			button.BackgroundColor3 = Color3.fromRGB(0, 200, 100);
 		else
-			v64.BackgroundColor3 = Color3.fromRGB(30, 30, 42);
+			button.BackgroundColor3 = Color3.fromRGB(30, 30, 42);
 		end
 	end
-	if v46 then
-		v37(v0[LUAOBFUSACTOR_DECRYPT_STR_0("\23\64\72\47\202\16\64\64\4\200\9\64\1\122", "\169\100\37\36\74")]);
+	if showPopup then
+		showSkillNotificationAtMouse(selectedName);
 	end
 end
-for v51, v52 in ipairs(v0[LUAOBFUSACTOR_DECRYPT_STR_0("\51\140\171\92\12\148\142\89\19\147\231\0", "\48\96\231\194")]) do
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\202\78\0\104\73", "\227\168\58\110\77\121\184\207")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\79\57\167\84\147\206\101\177\116\50", "\197\27\92\223\32\209\187\17"));
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\1\75\205\190\83", "\155\99\63\163")].Text = v52;
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\128\197\175\200\233", "\228\226\177\193\237\217")].TextSize = 13;
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\54\164\45\163\100", "\134\84\208\67")].Font = Enum.Font.Code;
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\17\184\136\25\67", "\60\115\204\230")].TextColor3 = Color3.fromRGB(255, 255, 255);
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\229\46\229\53\183", "\16\135\90\139")].BorderSizePixel = 0;
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\86\96\8\118\30", "\24\52\20\102\83\46\52")].BackgroundColor3 = ((v52 == "Z") and Color3.fromRGB(0, 200, 100)) or Color3.fromRGB(30, 30, 42);
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\198\59\47\97\95", "\111\164\79\65\68")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\228\204\151\202\33\228\213\250\140\208\58\235\207\215\134\204\107\186", "\138\166\185\227\190\78")];
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\200\123\215\57\87\49\92\155", "\121\171\20\165\87\50\67")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\243\17\154\57\171\12\195\42", "\98\166\88\217\86\217"));
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\245\249\107\15\131\206\179\166", "\188\150\150\25\97\230")].CornerRadius = UDim.new(0, 8);
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\217\134\77\12\9\255\159\217", "\141\186\233\63\98\108")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\243\254\34\243\117", "\69\145\138\76\214")];
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\114\219\135\204\239", "\118\16\175\233\233\223")].MouseButton1Click:Connect(function()
-		v0[LUAOBFUSACTOR_DECRYPT_STR_0("\168\145\39\169\235\133\105\184\143\60\183\226\162\115\143\129\45\254\190", "\29\235\228\85\219\142\235")] = v51;
-		v38(true);
+for index, skillName in ipairs(SkillsList) do
+	local btn = Instance.new("TextButton");
+	btn.Text = skillName;
+	btn.TextSize = 13;
+	btn.Font = Enum.Font.Code;
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255);
+	btn.BorderSizePixel = 0;
+	btn.BackgroundColor3 = ((skillName == "Z") and Color3.fromRGB(0, 200, 100)) or Color3.fromRGB(30, 30, 42);
+	btn.Parent = ButtonsContainer;
+	local corner = Instance.new("UICorner");
+	corner.CornerRadius = UDim.new(0, 8);
+	corner.Parent = btn;
+	btn.MouseButton1Click:Connect(function()
+		CurrentSkillIndex = index;
+		updateSkillButtons(true);
 	end);
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\46\223\179\209\123\108\50\70\41\219\180\206\50\30", "\50\93\180\218\189\23\46\71")][v52] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\220\176\85\9\20", "\40\190\196\59\44\36\188")];
+	skillButtons[skillName] = btn;
 end
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\15\81\221\160\239\110\33\61\71\217\184\191\45", "\109\92\37\188\212\154\29")] = Instance.new(LUAOBFUSACTOR_DECRYPT_STR_0("\48\234\188\215\29\91\6\234\168", "\58\100\143\196\163\81"));
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\41\86\34\183\42\90\201\15\24\71\47\230\111", "\110\122\34\67\195\95\41\133")].Size = UDim2.new(1, 0, 0, 20);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\70\165\90\94\195\102\157\90\72\211\121\244\11", "\182\21\209\59\42")].Position = UDim2.new(0, 0, 1, -22);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\132\67\196\9\52\173\155\86\199\24\45\251\231", "\222\215\55\165\125\65")].BackgroundTransparency = 1;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\31\197\199\14\231\210\193\75\46\212\202\95\162", "\42\76\177\166\122\146\161\141")].Text = LUAOBFUSACTOR_DECRYPT_STR_0("\128\184\49\148\57\68\128\171\33\247", "\22\197\234\101\174\25");
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\30\32\164\200\99\188\251\135\47\49\169\153\38", "\230\77\84\197\188\22\207\183")].TextColor3 = Color3.fromRGB(0, 255, 120);
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\202\0\199\232\153\178\220\52\251\17\202\185\220", "\85\153\116\166\156\236\193\144")].TextSize = 11;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\151\244\76\167\241\19\136\225\79\182\232\69\244", "\96\196\128\45\211\132")].Font = Enum.Font.Code;
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\6\153\122\75\199\188\152\217\55\136\119\26\130", "\184\85\237\27\63\178\207\212")].Parent = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\37\88\0\81\46\75\8\82\13\28\89", "\63\104\57\105")];
-v0[LUAOBFUSACTOR_DECRYPT_STR_0("\62\148\161\86\34\137\180\81\31\180\161\86\29\142\167\65\78\215", "\36\107\231\196")].InputBegan:Connect(function(v58, v59)
-	if v0[LUAOBFUSACTOR_DECRYPT_STR_0("\104\166\167\149\116\187\178\146\73\134\167\149\75\188\161\130\24\229", "\231\61\213\194")]:GetFocusedTextBox() then
+local StatusLabel = Instance.new("TextLabel");
+StatusLabel.Size = UDim2.new(1, 0, 0, 20);
+StatusLabel.Position = UDim2.new(0, 0, 1, -22);
+StatusLabel.BackgroundTransparency = 1;
+StatusLabel.Text = "ERT: READY";
+StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 120);
+StatusLabel.TextSize = 11;
+StatusLabel.Font = Enum.Font.Code;
+StatusLabel.Parent = MainFrame;
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if UserInputService:GetFocusedTextBox() then
 		return;
 	end
-	if (v58.KeyCode == Enum.KeyCode.P) then
-		v0[LUAOBFUSACTOR_DECRYPT_STR_0("\58\166\52\127\5\136\51\114\11\161\56\119\76\253", "\19\105\205\93")] = not v0[LUAOBFUSACTOR_DECRYPT_STR_0("\154\3\215\141\51\140\6\223\131\51\172\12\155\209", "\95\201\104\190\225")];
-		v29();
+	if (input.KeyCode == Enum.KeyCode.P) then
+		SkillEnabled = not SkillEnabled;
+		updateSwitchButton();
 	end
-	if (v58.KeyCode == Enum.KeyCode.L) then
-		v0[LUAOBFUSACTOR_DECRYPT_STR_0("\130\202\200\192\137\217\192\195\170\142\145", "\174\207\171\161")].Visible = not v0[LUAOBFUSACTOR_DECRYPT_STR_0("\192\255\4\253\222\197\236\243\8\182\168", "\183\141\158\109\147\152")].Visible;
+	if (input.KeyCode == Enum.KeyCode.L) then
+		MainFrame.Visible = not MainFrame.Visible;
 	end
-	if ((v58.KeyCode == Enum.KeyCode.LeftAlt) or (v58.KeyCode == Enum.KeyCode.RightAlt)) then
-		v0[LUAOBFUSACTOR_DECRYPT_STR_0("\15\28\244\30\41\7\242\63\39\0\234\0\5\7\226\9\52\76\182", "\108\76\105\134")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\228\199\183\222\239\197\225\244\177", "\174\139\165\209\129")](v0[LUAOBFUSACTOR_DECRYPT_STR_0("\128\166\240\211\195\13\100\75\168\186\238\205\239\13\116\125\187\246\178", "\24\195\211\130\161\166\99\16")], 1) + v0[LUAOBFUSACTOR_DECRYPT_STR_0("\73\1\239\19\124\36\3\83", "\118\38\99\137\76\51")](v0[LUAOBFUSACTOR_DECRYPT_STR_0("\222\51\23\0\12\46\233\21\14\27\5\44\212\40\1\23\17\101\173", "\64\157\70\101\114\105")], 1);
-		if (v0[LUAOBFUSACTOR_DECRYPT_STR_0("\99\189\181\241\21\78\188\148\232\25\76\164\142\237\20\69\176\226\179", "\112\32\200\199\131")] > #v0[LUAOBFUSACTOR_DECRYPT_STR_0("\31\91\85\180\207\184\14\37\67\72\253\147", "\66\76\48\60\216\163\203")]) then
-			v0[LUAOBFUSACTOR_DECRYPT_STR_0("\153\147\107\225\90\192\48\137\141\112\255\83\231\42\190\131\97\182\15", "\68\218\230\25\147\63\174")] = 1;
+	if ((input.KeyCode == Enum.KeyCode.LeftAlt) or (input.KeyCode == Enum.KeyCode.RightAlt)) then
+		CurrentSkillIndex = CurrentSkillIndex + 1;
+		if (CurrentSkillIndex > #SkillsList) then
+			CurrentSkillIndex = 1;
 		end
-		v38(true);
+		updateSkillButtons(true);
 	end
 end);
-local function v40(v60)
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\174\34\82\94\243\253", "\214\205\74\51\44")] = v0[LUAOBFUSACTOR_DECRYPT_STR_0("\214\67\225\253\123\202\64\227\229\114\232\9\178", "\23\154\44\130\156")].Character;
-	if not v0[LUAOBFUSACTOR_DECRYPT_STR_0("\18\174\172\188\115\67", "\115\113\198\205\206\86")] then
+local isMyCharacter;
+function v101(obj)
+	local char = LocalPlayer.Character;
+	if not char then
 		return false;
 	end
-	if (typeof(v60) == LUAOBFUSACTOR_DECRYPT_STR_0("\173\89\237\78\133\89\253\95", "\58\228\55\158")) then
-		return (v60 == v0[LUAOBFUSACTOR_DECRYPT_STR_0("\183\129\209\60\121\253", "\85\212\233\176\78\92\205")]) or v60:IsDescendantOf(v0["char%0"]);
-	elseif (type(v60) == LUAOBFUSACTOR_DECRYPT_STR_0("\94\89\138\238\79", "\130\42\56\232")) then
-		for v78, v79 in pairs(v60) do
-			if v40(v79) then
+	if (typeof(obj) == "Instance") then
+		return (obj == char) or obj:IsDescendantOf(char);
+	elseif (type(obj) == "table") then
+		for _, v in pairs(obj) do
+			if isMyCharacter(v) then
 				return true;
 			end
 		end
 	end
 	return false;
 end
-if v0[LUAOBFUSACTOR_DECRYPT_STR_0("\200\188\42\231\65\61\230\176\97\179", "\95\138\213\68\131\32")] then
-	v0[LUAOBFUSACTOR_DECRYPT_STR_0("\8\33\175\71\119\40\36\164\6\38", "\22\74\72\193\35")].Event:Connect(function(v71, v72, v73, v74)
-		if (not v0[LUAOBFUSACTOR_DECRYPT_STR_0("\31\114\237\84\32\92\234\89\46\117\225\92\105\41", "\56\76\25\132")] or v0[LUAOBFUSACTOR_DECRYPT_STR_0("\87\210\142\62\202\93\212\191\47\193\89\132\251", "\175\62\161\203\70")]) then
+if Bindable then
+	Bindable.Event:Connect(function(action, module, data, info)
+		if (not SkillEnabled or isExecuting) then
 			return;
 		end
-		if ((v71 == LUAOBFUSACTOR_DECRYPT_STR_0("\47\205\194\4\59", "\85\92\189\163\115")) and ((v72 == v0[LUAOBFUSACTOR_DECRYPT_STR_0("\26\163\34\45\108\252", "\88\73\204\80")]) or (tostring(v72) == LUAOBFUSACTOR_DECRYPT_STR_0("\29\140\2\83", "\186\78\227\112\38\73")))) then
-			if (v40(v73) or v40(v74)) then
-				v0[LUAOBFUSACTOR_DECRYPT_STR_0("\245\68\216\77\86\121\233\67\244\91\84\63\172", "\26\156\55\157\53\51")] = true;
-				v0[LUAOBFUSACTOR_DECRYPT_STR_0("\191\204\23\205\173\67\160\217\20\220\180\21\220", "\48\236\184\118\185\216")].Text = LUAOBFUSACTOR_DECRYPT_STR_0("\192\143\99\106\143\17\221\152\116\5\251\29\203\154\23\11", "\84\133\221\55\80\175") .. v0[LUAOBFUSACTOR_DECRYPT_STR_0("\142\236\45\170\203\79\145\238\55\178\130\12", "\60\221\135\68\198\167")][v0[LUAOBFUSACTOR_DECRYPT_STR_0("\205\168\234\145\71\215\250\142\243\138\78\213\199\179\252\134\90\156\190", "\185\142\221\152\227\34")]] .. "]";
-				v0[LUAOBFUSACTOR_DECRYPT_STR_0("\107\209\86\238\86\32\219\89\199\82\246\6\99", "\151\56\165\55\154\35\83")].TextColor3 = Color3.fromRGB(255, 170, 0);
-				v0[LUAOBFUSACTOR_DECRYPT_STR_0("\150\74\23\250\181\66\9\199\174\83\16\250\141\66\11\239\167\70\23\171\240", "\142\192\35\101")]:SendKeyEvent(true, v0["SelectedSkill%0"], false, nil);
-				v0[LUAOBFUSACTOR_DECRYPT_STR_0("\224\124\59\183\242\141\160\63\216\101\60\183\202\141\162\23\209\112\59\230\183", "\118\182\21\73\195\135\236\204")]:SendKeyEvent(false, v0["SelectedSkill%0"], false, nil);
+		if ((action == "spawn") and ((module == Soru) or (tostring(module) == "Soru"))) then
+			if (isMyCharacter(data) or isMyCharacter(info)) then
+				isExecuting = true;
+				StatusLabel.Text = "ERT: EXECUTING [" .. SkillsList[CurrentSkillIndex] .. "]";
+				StatusLabel.TextColor3 = Color3.fromRGB(255, 170, 0);
+				VirtualInputManager:SendKeyEvent(true, SelectedSkill, false, nil);
+				VirtualInputManager:SendKeyEvent(false, SelectedSkill, false, nil);
 				task.wait(0.04);
-				v0[LUAOBFUSACTOR_DECRYPT_STR_0("\59\40\27\84\17\30\209\9\62\31\76\65\93", "\157\104\92\122\32\100\109")].Text = LUAOBFUSACTOR_DECRYPT_STR_0("\134\148\251\144\125\21\168\138\135\159", "\203\195\198\175\170\93\71\237");
-				v0[LUAOBFUSACTOR_DECRYPT_STR_0("\29\95\63\193\68\2\208\47\73\59\217\20\65", "\156\78\43\94\181\49\113")].TextColor3 = Color3.fromRGB(0, 255, 120);
-				v0[LUAOBFUSACTOR_DECRYPT_STR_0("\123\251\225\187\14\64\108\102\225\202\164\78\19", "\25\18\136\164\195\107\35")] = false;
+				StatusLabel.Text = "ERT: READY";
+				StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 120);
+				isExecuting = false;
 			end
 		end
 	end);
