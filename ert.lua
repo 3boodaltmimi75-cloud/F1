@@ -1,4 +1,4 @@
--- [[ ERT-- [[ Blox Fruits Auto Soru & Skill Combo - Ultra Modern UI Version ]] -- ]]
+-- [[ ERT - Blox Fruits Auto Soru & Skill Combo ]] --
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -20,7 +20,7 @@ local SkillEnabled = true
 local isExecuting = false
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "UltraSoruGUI"
+ScreenGui.Name = "ERT_SoruGUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
@@ -86,7 +86,7 @@ local Label = Instance.new("TextLabel")
 Label.Size = UDim2.new(1, 0, 0, 20)
 Label.Position = UDim2.new(0, 0, 0, 88)
 Label.BackgroundTransparency = 1
-Label.Text = "ERT - ACTIVE SKILL:"
+Label.Text = "ACTIVE SKILL (ALT):"
 Label.TextColor3 = Color3.fromRGB(140, 140, 165)
 Label.TextSize = 10
 Label.Font = Enum.Font.Code
@@ -122,7 +122,7 @@ local skillNotifyTween = nil
 local function showSkillNotificationAtMouse(skillName)
     local mousePos = UserInputService:GetMouseLocation()
     SkillNotifyLabel.Position = UDim2.new(0, mousePos.X + 15, 0, mousePos.Y - 10)
-    SkillNotifyLabel.Text = "ERT: [" .. skillName .. "]"
+    SkillNotifyLabel.Text = "[" .. skillName .. "]"
     
     if skillNotifyTween then
         skillNotifyTween:Cancel()
@@ -192,7 +192,7 @@ local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(1, 0, 0, 20)
 StatusLabel.Position = UDim2.new(0, 0, 1, -22)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "ERT: READY"
+StatusLabel.Text = "STATUS: READY"
 StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 120)
 StatusLabel.TextSize = 11
 StatusLabel.Font = Enum.Font.Code
@@ -241,14 +241,14 @@ if Bindable then
             if isMyCharacter(data) or isMyCharacter(info) then
                 isExecuting = true
                 
-                StatusLabel.Text = "ERT: EXECUTING [" .. SkillsList[CurrentSkillIndex] .. "]"
+                StatusLabel.Text = "STATUS: EXECUTING [" .. SkillsList[CurrentSkillIndex] .. "]"
                 StatusLabel.TextColor3 = Color3.fromRGB(255, 170, 0)
 
                 VirtualInputManager:SendKeyEvent(true, SelectedSkill, false, nil)
                 VirtualInputManager:SendKeyEvent(false, SelectedSkill, false, nil)
 
                 task.wait(0.04)
-                StatusLabel.Text = "ERT: READY"
+                StatusLabel.Text = "STATUS: READY"
                 StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 120)
                 isExecuting = false
             end
