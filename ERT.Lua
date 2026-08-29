@@ -1,1329 +1,833 @@
 --[[
-    BLOX FRUITS ULTRA v3
-    ====================
-    - Advanced Aimbot (smooth + prediction)
-    - Silent Aim (prediction + X/Y offset)
-    - Speed / Jump / FOV control
-    - Slide (ice glide)
-    - Radar (detects players)
-    - Code Redeemer
-    - X / Y aim offset (max 20 each)
-    Keys:
-        R = Aimbot      T = Silent Aim      K = Hide/Show GUI
-]]
+ .____                  ________ ___.    _____                           __                
+ |    |    __ _______   \_____  \\_ |___/ ____\_ __  ______ ____ _____ _/  |_  ___________ 
+ |    |   |  |  \__  \   /   |   \| __ \   __\  |  \/  ___// ___\\__  \\   __\/  _ \_  __ \
+ |    |___|  |  // __ \_/    |    \ \_\ \  | |  |  /\___ \\  \___ / __ \|  | (  <_> )  | \/
+ |_______ \____/(____  /\_______  /___  /__| |____//____  >\___  >____  /__|  \____/|__|   
+         \/          \/         \/    \/                \/     \/     \/                   
+          \_Welcome to LuaObfuscator.com   (Alpha 0.10.9) ~  Much Love, Ferib 
 
-getgenv().BFUltra = getgenv().BFUltra or {}
-if getgenv().BFUltra.Loaded then
-    warn("[BFUltra] Already loaded. Restart Roblox to reload.")
-    return
+]]--
+
+local StrToNumber = tonumber;
+local Byte = string.byte;
+local Char = string.char;
+local Sub = string.sub;
+local Subg = string.gsub;
+local Rep = string.rep;
+local Concat = table.concat;
+local Insert = table.insert;
+local LDExp = math.ldexp;
+local GetFEnv = getfenv or function()
+	return _ENV;
+end;
+local Setmetatable = setmetatable;
+local PCall = pcall;
+local Select = select;
+local Unpack = unpack or table.unpack;
+local ToNumber = tonumber;
+local function VMCall(ByteString, vmenv, ...)
+	local DIP = 1;
+	local repeatNext;
+	ByteString = Subg(Sub(ByteString, 5), "..", function(byte)
+		if (Byte(byte, 2) == 81) then
+			repeatNext = StrToNumber(Sub(byte, 1, 1));
+			return "";
+		else
+			local a = Char(StrToNumber(byte, 16));
+			if repeatNext then
+				local b = Rep(a, repeatNext);
+				repeatNext = nil;
+				return b;
+			else
+				return a;
+			end
+		end
+	end);
+	local function gBit(Bit, Start, End)
+		if End then
+			local Res = (Bit / (2 ^ (Start - 1))) % (2 ^ (((End - 1) - (Start - 1)) + 1));
+			return Res - (Res % 1);
+		else
+			local Plc = 2 ^ (Start - 1);
+			return (((Bit % (Plc + Plc)) >= Plc) and 1) or 0;
+		end
+	end
+	local function gBits8()
+		local a = Byte(ByteString, DIP, DIP);
+		DIP = DIP + 1;
+		return a;
+	end
+	local function gBits16()
+		local a, b = Byte(ByteString, DIP, DIP + 2);
+		DIP = DIP + 2;
+		return (b * 256) + a;
+	end
+	local function gBits32()
+		local a, b, c, d = Byte(ByteString, DIP, DIP + 3);
+		DIP = DIP + 4;
+		return (d * 16777216) + (c * 65536) + (b * 256) + a;
+	end
+	local function gFloat()
+		local Left = gBits32();
+		local Right = gBits32();
+		local IsNormal = 1;
+		local Mantissa = (gBit(Right, 1, 20) * (2 ^ 32)) + Left;
+		local Exponent = gBit(Right, 21, 31);
+		local Sign = ((gBit(Right, 32) == 1) and -1) or 1;
+		if (Exponent == 0) then
+			if (Mantissa == 0) then
+				return Sign * 0;
+			else
+				Exponent = 1;
+				IsNormal = 0;
+			end
+		elseif (Exponent == 2047) then
+			return ((Mantissa == 0) and (Sign * (1 / 0))) or (Sign * NaN);
+		end
+		return LDExp(Sign, Exponent - 1023) * (IsNormal + (Mantissa / (2 ^ 52)));
+	end
+	local function gString(Len)
+		local Str;
+		if not Len then
+			Len = gBits32();
+			if (Len == 0) then
+				return "";
+			end
+		end
+		Str = Sub(ByteString, DIP, (DIP + Len) - 1);
+		DIP = DIP + Len;
+		local FStr = {};
+		for Idx = 1, #Str do
+			FStr[Idx] = Char(Byte(Sub(Str, Idx, Idx)));
+		end
+		return Concat(FStr);
+	end
+	local gInt = gBits32;
+	local function _R(...)
+		return {...}, Select("#", ...);
+	end
+	local function Deserialize()
+		local Instrs = {};
+		local Functions = {};
+		local Lines = {};
+		local Chunk = {Instrs,Functions,nil,Lines};
+		local ConstCount = gBits32();
+		local Consts = {};
+		for Idx = 1, ConstCount do
+			local Type = gBits8();
+			local Cons;
+			if (Type == 1) then
+				Cons = gBits8() ~= 0;
+			elseif (Type == 2) then
+				Cons = gFloat();
+			elseif (Type == 3) then
+				Cons = gString();
+			end
+			Consts[Idx] = Cons;
+		end
+		Chunk[3] = gBits8();
+		for Idx = 1, gBits32() do
+			local Descriptor = gBits8();
+			if (gBit(Descriptor, 1, 1) == 0) then
+				local Type = gBit(Descriptor, 2, 3);
+				local Mask = gBit(Descriptor, 4, 6);
+				local Inst = {gBits16(),gBits16(),nil,nil};
+				if (Type == 0) then
+					Inst[3] = gBits16();
+					Inst[4] = gBits16();
+				elseif (Type == 1) then
+					Inst[3] = gBits32();
+				elseif (Type == 2) then
+					Inst[3] = gBits32() - (2 ^ 16);
+				elseif (Type == 3) then
+					Inst[3] = gBits32() - (2 ^ 16);
+					Inst[4] = gBits16();
+				end
+				if (gBit(Mask, 1, 1) == 1) then
+					Inst[2] = Consts[Inst[2]];
+				end
+				if (gBit(Mask, 2, 2) == 1) then
+					Inst[3] = Consts[Inst[3]];
+				end
+				if (gBit(Mask, 3, 3) == 1) then
+					Inst[4] = Consts[Inst[4]];
+				end
+				Instrs[Idx] = Inst;
+			end
+		end
+		for Idx = 1, gBits32() do
+			Functions[Idx - 1] = Deserialize();
+		end
+		return Chunk;
+	end
+	local function Wrap(Chunk, Upvalues, Env)
+		local Instr = Chunk[1];
+		local Proto = Chunk[2];
+		local Params = Chunk[3];
+		return function(...)
+			local Instr = Instr;
+			local Proto = Proto;
+			local Params = Params;
+			local _R = _R;
+			local VIP = 1;
+			local Top = -1;
+			local Vararg = {};
+			local Args = {...};
+			local PCount = Select("#", ...) - 1;
+			local Lupvals = {};
+			local Stk = {};
+			for Idx = 0, PCount do
+				if (Idx >= Params) then
+					Vararg[Idx - Params] = Args[Idx + 1];
+				else
+					Stk[Idx] = Args[Idx + 1];
+				end
+			end
+			local Varargsz = (PCount - Params) + 1;
+			local Inst;
+			local Enum;
+			while true do
+				Inst = Instr[VIP];
+				Enum = Inst[1];
+				if (Enum <= 59) then
+					if (Enum <= 29) then
+						if (Enum <= 14) then
+							if (Enum <= 6) then
+								if (Enum <= 2) then
+									if (Enum <= 0) then
+										local A = Inst[2];
+										do
+											return Unpack(Stk, A, A + Inst[3]);
+										end
+									elseif (Enum == 1) then
+										local A = Inst[2];
+										local Results = {Stk[A](Unpack(Stk, A + 1, Top))};
+										local Edx = 0;
+										for Idx = A, Inst[4] do
+											Edx = Edx + 1;
+											Stk[Idx] = Results[Edx];
+										end
+									else
+										local A = Inst[2];
+										local Results = {Stk[A](Unpack(Stk, A + 1, Top))};
+										local Edx = 0;
+										for Idx = A, Inst[4] do
+											Edx = Edx + 1;
+											Stk[Idx] = Results[Edx];
+										end
+									end
+								elseif (Enum <= 4) then
+									if (Enum == 3) then
+										Stk[Inst[2]] = Stk[Inst[3]];
+									else
+										Stk[Inst[2]][Inst[3]] = Inst[4];
+									end
+								elseif (Enum == 5) then
+									local A = Inst[2];
+									local C = Inst[4];
+									local CB = A + 2;
+									local Result = {Stk[A](Stk[A + 1], Stk[CB])};
+									for Idx = 1, C do
+										Stk[CB + Idx] = Result[Idx];
+									end
+									local R = Result[1];
+									if R then
+										Stk[CB] = R;
+										VIP = Inst[3];
+									else
+										VIP = VIP + 1;
+									end
+								else
+									for Idx = Inst[2], Inst[3] do
+										Stk[Idx] = nil;
+									end
+								end
+							elseif (Enum <= 10) then
+								if (Enum <= 8) then
+									if (Enum == 7) then
+										local NewProto = Proto[Inst[3]];
+										local NewUvals;
+										local Indexes = {};
+										NewUvals = Setmetatable({}, {__index=function(_, Key)
+											local Val = Indexes[Key];
+											return Val[1][Val[2]];
+										end,__newindex=function(_, Key, Value)
+											local Val = Indexes[Key];
+											Val[1][Val[2]] = Value;
+										end});
+										for Idx = 1, Inst[4] do
+											VIP = VIP + 1;
+											local Mvm = Instr[VIP];
+											if (Mvm[1] == 117) then
+												Indexes[Idx - 1] = {Stk,Mvm[3]};
+											else
+												Indexes[Idx - 1] = {Upvalues,Mvm[3]};
+											end
+											Lupvals[#Lupvals + 1] = Indexes;
+										end
+										Stk[Inst[2]] = Wrap(NewProto, NewUvals, Env);
+									else
+										Stk[Inst[2]] = Inst[3];
+									end
+								elseif (Enum == 9) then
+									local A = Inst[2];
+									local Results = {Stk[A](Stk[A + 1])};
+									local Edx = 0;
+									for Idx = A, Inst[4] do
+										Edx = Edx + 1;
+										Stk[Idx] = Results[Edx];
+									end
+								else
+									local A = Inst[2];
+									Stk[A](Stk[A + 1]);
+								end
+							elseif (Enum <= 12) then
+								if (Enum > 11) then
+									if (Stk[Inst[2]] == Inst[4]) then
+										VIP = VIP + 1;
+									else
+										VIP = Inst[3];
+									end
+								else
+									local A = Inst[2];
+									do
+										return Unpack(Stk, A, A + Inst[3]);
+									end
+								end
+							elseif (Enum > 13) then
+								Stk[Inst[2]] = Wrap(Proto[Inst[3]], nil, Env);
+							else
+								local A = Inst[2];
+								local Results = {Stk[A](Unpack(Stk, A + 1, Inst[3]))};
+								local Edx = 0;
+								for Idx = A, Inst[4] do
+									Edx = Edx + 1;
+									Stk[Idx] = Results[Edx];
+								end
+							end
+						elseif (Enum <= 21) then
+							if (Enum <= 17) then
+								if (Enum <= 15) then
+									local A = Inst[2];
+									Stk[A] = Stk[A](Stk[A + 1]);
+								elseif (Enum > 16) then
+									if (Stk[Inst[2]] ~= Stk[Inst[4]]) then
+										VIP = VIP + 1;
+									else
+										VIP = Inst[3];
+									end
+								else
+									Stk[Inst[2]] = Inst[3] ~= 0;
+								end
+							elseif (Enum <= 19) then
+								if (Enum > 18) then
+									local A = Inst[2];
+									Stk[A] = Stk[A]();
+								else
+									Stk[Inst[2]] = Stk[Inst[3]][Stk[Inst[4]]];
+								end
+							elseif (Enum > 20) then
+								Stk[Inst[2]][Stk[Inst[3]]] = Stk[Inst[4]];
+							else
+								local B = Stk[Inst[4]];
+								if not B then
+									VIP = VIP + 1;
+								else
+									Stk[Inst[2]] = B;
+									VIP = Inst[3];
+								end
+							end
+						elseif (Enum <= 25) then
+							if (Enum <= 23) then
+								if (Enum == 22) then
+									local B = Stk[Inst[4]];
+									if B then
+										VIP = VIP + 1;
+									else
+										Stk[Inst[2]] = B;
+										VIP = Inst[3];
+									end
+								else
+									Stk[Inst[2]] = Stk[Inst[3]] - Inst[4];
+								end
+							elseif (Enum > 24) then
+								Stk[Inst[2]] = {};
+							else
+								local A = Inst[2];
+								local T = Stk[A];
+								for Idx = A + 1, Inst[3] do
+									Insert(T, Stk[Idx]);
+								end
+							end
+						elseif (Enum <= 27) then
+							if (Enum > 26) then
+								local A = Inst[2];
+								Stk[A] = Stk[A](Unpack(Stk, A + 1, Inst[3]));
+							else
+								Stk[Inst[2]] = Stk[Inst[3]] / Stk[Inst[4]];
+							end
+						elseif (Enum == 28) then
+							local A = Inst[2];
+							local B = Stk[Inst[3]];
+							Stk[A + 1] = B;
+							Stk[A] = B[Inst[4]];
+						else
+							Upvalues[Inst[3]] = Stk[Inst[2]];
+						end
+					elseif (Enum <= 44) then
+						if (Enum <= 36) then
+							if (Enum <= 32) then
+								if (Enum <= 30) then
+									local A = Inst[2];
+									local T = Stk[A];
+									local B = Inst[3];
+									for Idx = 1, B do
+										T[Idx] = Stk[A + Idx];
+									end
+								elseif (Enum == 31) then
+									if not Stk[Inst[2]] then
+										VIP = VIP + 1;
+									else
+										VIP = Inst[3];
+									end
+								else
+									local A = Inst[2];
+									local Results, Limit = _R(Stk[A](Stk[A + 1]));
+									Top = (Limit + A) - 1;
+									local Edx = 0;
+									for Idx = A, Top do
+										Edx = Edx + 1;
+										Stk[Idx] = Results[Edx];
+									end
+								end
+							elseif (Enum <= 34) then
+								if (Enum > 33) then
+									Stk[Inst[2]] = not Stk[Inst[3]];
+								else
+									Stk[Inst[2]] = Upvalues[Inst[3]];
+								end
+							elseif (Enum == 35) then
+								Stk[Inst[2]] = Env[Inst[3]];
+							elseif (Stk[Inst[2]] ~= Inst[4]) then
+								VIP = VIP + 1;
+							else
+								VIP = Inst[3];
+							end
+						elseif (Enum <= 40) then
+							if (Enum <= 38) then
+								if (Enum > 37) then
+									Stk[Inst[2]][Inst[3]] = Stk[Inst[4]];
+								else
+									local A = Inst[2];
+									local C = Inst[4];
+									local CB = A + 2;
+									local Result = {Stk[A](Stk[A + 1], Stk[CB])};
+									for Idx = 1, C do
+										Stk[CB + Idx] = Result[Idx];
+									end
+									local R = Result[1];
+									if R then
+										Stk[CB] = R;
+										VIP = Inst[3];
+									else
+										VIP = VIP + 1;
+									end
+								end
+							elseif (Enum > 39) then
+								Stk[Inst[2]][Stk[Inst[3]]] = Stk[Inst[4]];
+							else
+								Stk[Inst[2]] = Stk[Inst[3]] + Inst[4];
+							end
+						elseif (Enum <= 42) then
+							if (Enum > 41) then
+								Stk[Inst[2]] = -Stk[Inst[3]];
+							else
+								Stk[Inst[2]] = Stk[Inst[3]] - Stk[Inst[4]];
+							end
+						elseif (Enum > 43) then
+							if (Stk[Inst[2]] ~= Inst[4]) then
+								VIP = VIP + 1;
+							else
+								VIP = Inst[3];
+							end
+						else
+							Stk[Inst[2]] = Inst[3];
+						end
+					elseif (Enum <= 51) then
+						if (Enum <= 47) then
+							if (Enum <= 45) then
+								Stk[Inst[2]] = Upvalues[Inst[3]];
+							elseif (Enum == 46) then
+								Stk[Inst[2]] = not Stk[Inst[3]];
+							else
+								Stk[Inst[2]] = Env[Inst[3]];
+							end
+						elseif (Enum <= 49) then
+							if (Enum > 48) then
+								Stk[Inst[2]] = Stk[Inst[3]] + Inst[4];
+							else
+								Stk[Inst[2]] = Stk[Inst[3]][Stk[Inst[4]]];
+							end
+						elseif (Enum > 50) then
+							local A = Inst[2];
+							Stk[A](Unpack(Stk, A + 1, Inst[3]));
+						elseif (Stk[Inst[2]] ~= Stk[Inst[4]]) then
+							VIP = VIP + 1;
+						else
+							VIP = Inst[3];
+						end
+					elseif (Enum <= 55) then
+						if (Enum <= 53) then
+							if (Enum == 52) then
+								if not Stk[Inst[2]] then
+									VIP = VIP + 1;
+								else
+									VIP = Inst[3];
+								end
+							elseif (Stk[Inst[2]] <= Stk[Inst[4]]) then
+								VIP = VIP + 1;
+							else
+								VIP = Inst[3];
+							end
+						elseif (Enum == 54) then
+							local B = Inst[3];
+							local K = Stk[B];
+							for Idx = B + 1, Inst[4] do
+								K = K .. Stk[Idx];
+							end
+							Stk[Inst[2]] = K;
+						else
+							local A = Inst[2];
+							Stk[A] = Stk[A](Unpack(Stk, A + 1, Top));
+						end
+					elseif (Enum <= 57) then
+						if (Enum == 56) then
+							Stk[Inst[2]] = Stk[Inst[3]][Inst[4]];
+						else
+							Env[Inst[3]] = Stk[Inst[2]];
+						end
+					elseif (Enum > 58) then
+						Stk[Inst[2]] = -Stk[Inst[3]];
+					else
+						Upvalues[Inst[3]] = Stk[Inst[2]];
+					end
+				elseif (Enum <= 89) then
+					if (Enum <= 74) then
+						if (Enum <= 66) then
+							if (Enum <= 62) then
+								if (Enum <= 60) then
+									do
+										return;
+									end
+								elseif (Enum > 61) then
+									local A = Inst[2];
+									Stk[A](Stk[A + 1]);
+								else
+									Stk[Inst[2]] = #Stk[Inst[3]];
+								end
+							elseif (Enum <= 64) then
+								if (Enum > 63) then
+									Stk[Inst[2]] = Stk[Inst[3]] - Inst[4];
+								else
+									Stk[Inst[2]] = Stk[Inst[3]] / Inst[4];
+								end
+							elseif (Enum > 65) then
+								Stk[Inst[2]] = Stk[Inst[3]][Inst[4]];
+							elseif (Stk[Inst[2]] == Stk[Inst[4]]) then
+								VIP = VIP + 1;
+							else
+								VIP = Inst[3];
+							end
+						elseif (Enum <= 70) then
+							if (Enum <= 68) then
+								if (Enum > 67) then
+									Stk[Inst[2]] = Stk[Inst[3]] * Inst[4];
+								else
+									local A = Inst[2];
+									local Results, Limit = _R(Stk[A](Stk[A + 1]));
+									Top = (Limit + A) - 1;
+									local Edx = 0;
+									for Idx = A, Top do
+										Edx = Edx + 1;
+										Stk[Idx] = Results[Edx];
+									end
+								end
+							elseif (Enum > 69) then
+								if (Stk[Inst[2]] < Stk[Inst[4]]) then
+									VIP = VIP + 1;
+								else
+									VIP = Inst[3];
+								end
+							else
+								Stk[Inst[2]] = Stk[Inst[3]] - Stk[Inst[4]];
+							end
+						elseif (Enum <= 72) then
+							if (Enum > 71) then
+								if Stk[Inst[2]] then
+									VIP = VIP + 1;
+								else
+									VIP = Inst[3];
+								end
+							else
+								local A = Inst[2];
+								local Cls = {};
+								for Idx = 1, #Lupvals do
+									local List = Lupvals[Idx];
+									for Idz = 0, #List do
+										local Upv = List[Idz];
+										local NStk = Upv[1];
+										local DIP = Upv[2];
+										if ((NStk == Stk) and (DIP >= A)) then
+											Cls[DIP] = NStk[DIP];
+											Upv[1] = Cls;
+										end
+									end
+								end
+							end
+						elseif (Enum == 73) then
+							Stk[Inst[2]] = Stk[Inst[3]] / Stk[Inst[4]];
+						else
+							local B = Stk[Inst[4]];
+							if not B then
+								VIP = VIP + 1;
+							else
+								Stk[Inst[2]] = B;
+								VIP = Inst[3];
+							end
+						end
+					elseif (Enum <= 81) then
+						if (Enum <= 77) then
+							if (Enum <= 75) then
+								if (Inst[2] < Stk[Inst[4]]) then
+									VIP = VIP + 1;
+								else
+									VIP = Inst[3];
+								end
+							elseif (Enum > 76) then
+								local B = Inst[3];
+								local K = Stk[B];
+								for Idx = B + 1, Inst[4] do
+									K = K .. Stk[Idx];
+								end
+								Stk[Inst[2]] = K;
+							else
+								Stk[Inst[2]] = Stk[Inst[3]] + Stk[Inst[4]];
+							end
+						elseif (Enum <= 79) then
+							if (Enum > 78) then
+								Stk[Inst[2]] = Wrap(Proto[Inst[3]], nil, Env);
+							else
+								local A = Inst[2];
+								local Cls = {};
+								for Idx = 1, #Lupvals do
+									local List = Lupvals[Idx];
+									for Idz = 0, #List do
+										local Upv = List[Idz];
+										local NStk = Upv[1];
+										local DIP = Upv[2];
+										if ((NStk == Stk) and (DIP >= A)) then
+											Cls[DIP] = NStk[DIP];
+											Upv[1] = Cls;
+										end
+									end
+								end
+							end
+						elseif (Enum == 80) then
+							Stk[Inst[2]][Inst[3]] = Inst[4];
+						else
+							Stk[Inst[2]] = #Stk[Inst[3]];
+						end
+					elseif (Enum <= 85) then
+						if (Enum <= 83) then
+							if (Enum > 82) then
+								local NewProto = Proto[Inst[3]];
+								local NewUvals;
+								local Indexes = {};
+								NewUvals = Setmetatable({}, {__index=function(_, Key)
+									local Val = Indexes[Key];
+									return Val[1][Val[2]];
+								end,__newindex=function(_, Key, Value)
+									local Val = Indexes[Key];
+									Val[1][Val[2]] = Value;
+								end});
+								for Idx = 1, Inst[4] do
+									VIP = VIP + 1;
+									local Mvm = Instr[VIP];
+									if (Mvm[1] == 117) then
+										Indexes[Idx - 1] = {Stk,Mvm[3]};
+									else
+										Indexes[Idx - 1] = {Upvalues,Mvm[3]};
+									end
+									Lupvals[#Lupvals + 1] = Indexes;
+								end
+								Stk[Inst[2]] = Wrap(NewProto, NewUvals, Env);
+							else
+								local A = Inst[2];
+								local Results = {Stk[A](Stk[A + 1])};
+								local Edx = 0;
+								for Idx = A, Inst[4] do
+									Edx = Edx + 1;
+									Stk[Idx] = Results[Edx];
+								end
+							end
+						elseif (Enum == 84) then
+							Stk[Inst[2]] = Stk[Inst[3]] * Stk[Inst[4]];
+						else
+							Stk[Inst[2]] = {};
+						end
+					elseif (Enum <= 87) then
+						if (Enum == 86) then
+							local A = Inst[2];
+							Stk[A] = Stk[A](Unpack(Stk, A + 1, Top));
+						else
+							Stk[Inst[2]] = Stk[Inst[3]] + Stk[Inst[4]];
+						end
+					elseif (Enum == 88) then
+						Stk[Inst[2]][Stk[Inst[3]]] = Inst[4];
+					else
+						local A = Inst[2];
+						Stk[A] = Stk[A](Unpack(Stk, A + 1, Inst[3]));
+					end
+				elseif (Enum <= 104) then
+					if (Enum <= 96) then
+						if (Enum <= 92) then
+							if (Enum <= 90) then
+								do
+									return Stk[Inst[2]];
+								end
+							elseif (Enum > 91) then
+								Stk[Inst[2]] = Inst[3] ~= 0;
+								VIP = VIP + 1;
+							elseif (Stk[Inst[2]] == Inst[4]) then
+								VIP = VIP + 1;
+							else
+								VIP = Inst[3];
+							end
+						elseif (Enum <= 94) then
+							if (Enum > 93) then
+								do
+									return;
+								end
+							else
+								local A = Inst[2];
+								local T = Stk[A];
+								local B = Inst[3];
+								for Idx = 1, B do
+									T[Idx] = Stk[A + Idx];
+								end
+							end
+						elseif (Enum > 95) then
+							Env[Inst[3]] = Stk[Inst[2]];
+						elseif (Stk[Inst[2]] < Stk[Inst[4]]) then
+							VIP = VIP + 1;
+						else
+							VIP = Inst[3];
+						end
+					elseif (Enum <= 100) then
+						if (Enum <= 98) then
+							if (Enum > 97) then
+								Stk[Inst[2]]();
+							else
+								VIP = Inst[3];
+							end
+						elseif (Enum == 99) then
+							if (Stk[Inst[2]] <= Stk[Inst[4]]) then
+								VIP = VIP + 1;
+							else
+								VIP = Inst[3];
+							end
+						else
+							local B = Stk[Inst[4]];
+							if B then
+								VIP = VIP + 1;
+							else
+								Stk[Inst[2]] = B;
+								VIP = Inst[3];
+							end
+						end
+					elseif (Enum <= 102) then
+						if (Enum == 101) then
+							Stk[Inst[2]][Stk[Inst[3]]] = Inst[4];
+						else
+							VIP = Inst[3];
+						end
+					elseif (Enum > 103) then
+						Stk[Inst[2]]();
+					else
+						local A = Inst[2];
+						Stk[A](Unpack(Stk, A + 1, Inst[3]));
+					end
+				elseif (Enum <= 111) then
+					if (Enum <= 107) then
+						if (Enum <= 105) then
+							do
+								return Stk[Inst[2]];
+							end
+						elseif (Enum == 106) then
+							local A = Inst[2];
+							Stk[A] = Stk[A]();
+						else
+							Stk[Inst[2]] = Stk[Inst[3]] * Stk[Inst[4]];
+						end
+					elseif (Enum <= 109) then
+						if (Enum > 108) then
+							Stk[Inst[2]] = Inst[3] ~= 0;
+						elseif Stk[Inst[2]] then
+							VIP = VIP + 1;
+						else
+							VIP = Inst[3];
+						end
+					elseif (Enum == 110) then
+						Stk[Inst[2]][Inst[3]] = Stk[Inst[4]];
+					else
+						Stk[Inst[2]] = Stk[Inst[3]] / Inst[4];
+					end
+				elseif (Enum <= 115) then
+					if (Enum <= 113) then
+						if (Enum > 112) then
+							Stk[Inst[2]] = Stk[Inst[3]] * Inst[4];
+						else
+							local A = Inst[2];
+							Stk[A] = Stk[A](Stk[A + 1]);
+						end
+					elseif (Enum > 114) then
+						local A = Inst[2];
+						local Results = {Stk[A](Unpack(Stk, A + 1, Inst[3]))};
+						local Edx = 0;
+						for Idx = A, Inst[4] do
+							Edx = Edx + 1;
+							Stk[Idx] = Results[Edx];
+						end
+					else
+						local A = Inst[2];
+						local B = Stk[Inst[3]];
+						Stk[A + 1] = B;
+						Stk[A] = B[Inst[4]];
+					end
+				elseif (Enum <= 117) then
+					if (Enum > 116) then
+						Stk[Inst[2]] = Stk[Inst[3]];
+					else
+						for Idx = Inst[2], Inst[3] do
+							Stk[Idx] = nil;
+						end
+					end
+				elseif (Enum > 118) then
+					if (Inst[2] < Stk[Inst[4]]) then
+						VIP = VIP + 1;
+					else
+						VIP = Inst[3];
+					end
+				elseif (Stk[Inst[2]] == Stk[Inst[4]]) then
+					VIP = VIP + 1;
+				else
+					VIP = Inst[3];
+				end
+				VIP = VIP + 1;
+			end
+		end;
+	end
+	return Wrap(Deserialize(), {}, vmenv)(...);
 end
-getgenv().BFUltra.Loaded = true
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local Lighting = game:GetService("Lighting")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-
-local Settings = {
-    Aimbot     = false,
-    SilentAim  = false,
-    TeamCheck  = true,
-    FOV        = 180,
-    LockPart   = "Head",
-    Prediction = 0.12,
-    Smoothness = 0.35,
-    XOffset    = 0,
-    YOffset    = 0,
-    MaxOffset  = 20,
-    Speed      = 100,
-    JumpPower  = 100,
-    Slide      = false,
-    SlideSpeed = 150,
-    Radar      = true,
-    RadarRange = 350,
-    FPSBoost   = false,
-    AimbotKey  = Enum.KeyCode.R,
-    SilentKey  = Enum.KeyCode.T,
-    HideKey    = Enum.KeyCode.K,
-}
-
--- ================= HELPERS =================
-local function getChar()   return LocalPlayer.Character end
-
-local function getHRP()
-    local c = getChar()
-    return c and c:FindFirstChild("HumanoidRootPart")
-end
-
-local function getHumanoid()
-    local c = getChar()
-    return c and c:FindFirstChildOfClass("Humanoid")
-end
-
-local function applyStats()
-    local hum = getHumanoid()
-    if not hum then return end
-    hum.WalkSpeed = Settings.Speed
-    hum.JumpPower = Settings.JumpPower
-end
-
-local function IsEnemy(plr)
-    if plr == LocalPlayer then return false end
-    if Settings.TeamCheck and plr.Team == LocalPlayer.Team then return false end
-    return true
-end
-
-local function GetPredictedPos(part)
-    if not part then return nil end
-    local hrp = getHRP()
-    if not hrp then return part.Position end
-    local vel = part.Velocity or Vector3.new()
-    return part.Position + vel * Settings.Prediction
-end
-
-local function GetAimPos(part)
-    local p = GetPredictedPos(part)
-    if not p then return nil end
-    local camCF = Camera.CFrame
-    return p + camCF.RightVector * Settings.XOffset + camCF.UpVector * Settings.YOffset
-end
-
-local function getClosestEnemy()
-    local hrp = getHRP()
-    if not hrp then return nil end
-    local best, bestDist = nil, Settings.FOV
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if not IsEnemy(plr) then continue end
-        local c = plr.Character
-        if not c then continue end
-        local part = c:FindFirstChild(Settings.LockPart) or c:FindFirstChild("HumanoidRootPart")
-        if not part then continue end
-        local sp, onScreen = Camera:WorldToViewportPoint(part.Position)
-        if not onScreen then continue end
-        local dist = (Vector2.new(sp.X, sp.Y) - Camera.ViewportSize / 2).Magnitude
-        if dist < bestDist then
-            bestDist = dist
-            best = part
-        end
-    end
-    return best
-end
-
--- ================= GUI =================
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BFUltraGui"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-local GUI_W = 280
-local GUI_H = 634
-
-local Main = Instance.new("Frame")
-Main.Size = UDim2.fromOffset(GUI_W, GUI_H)
-Main.Position = UDim2.fromOffset(15, 150)
-Main.BackgroundColor3 = Color3.fromRGB(16, 16, 26)
-Main.BorderSizePixel = 2
-Main.BorderColor3 = Color3.fromRGB(255, 255, 255)
-Main.Active = true
-Main.Draggable = true
-Main.Parent = ScreenGui
-
-local TitleBar = Instance.new("Frame")
-TitleBar.Size = UDim2.new(1, 0, 0, 32)
-TitleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 70)
-TitleBar.BorderSizePixel = 0
-TitleBar.Parent = Main
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -40, 1, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "BLOX FRUITS ULTRA v3"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextScaled = true
-Title.Parent = TitleBar
-
-local MinimizeBtn = Instance.new("TextButton")
-MinimizeBtn.Size = UDim2.fromOffset(32, 32)
-MinimizeBtn.Position = UDim2.new(1, -32, 0, 0)
-MinimizeBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 95)
-MinimizeBtn.BorderSizePixel = 0
-MinimizeBtn.Text = "-"
-MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeBtn.Font = Enum.Font.GothamBold
-MinimizeBtn.TextScaled = true
-MinimizeBtn.Parent = TitleBar
-
-local function MakeSquareToggle(x, y, label)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.fromOffset(40, 40)
-    btn.Position = UDim2.fromOffset(x, y)
-    btn.BackgroundColor3 = Color3.fromRGB(55, 55, 75)
-    btn.BorderSizePixel = 2
-    btn.BorderColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Text = ""
-    btn.Parent = Main
-
-    local inner = Instance.new("Frame")
-    inner.Size = UDim2.fromOffset(24, 24)
-    inner.Position = UDim2.new(0.5, -12, 0.5, -12)
-    inner.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    inner.BackgroundTransparency = 1
-    inner.BorderSizePixel = 2
-    inner.BorderColor3 = Color3.fromRGB(255, 255, 255)
-    inner.Parent = btn
-
-    local lab = Instance.new("TextLabel")
-    lab.Size = UDim2.fromOffset(200, 40)
-    lab.Position = UDim2.fromOffset(x + 48, y)
-    lab.BackgroundTransparency = 1
-    lab.Text = label .. " : OFF"
-    lab.TextXAlignment = Enum.TextXAlignment.Left
-    lab.TextColor3 = Color3.fromRGB(255, 255, 255)
-    lab.Font = Enum.Font.GothamBold
-    lab.TextScaled = true
-    lab.Parent = Main
-
-    return btn, inner, lab
-end
-
-local function SetSquare(inner, on)
-    inner.BackgroundTransparency = on and 0 or 1
-end
-
-local function MakeLabel(x, y, text)
-    local l = Instance.new("TextLabel")
-    l.Size = UDim2.fromOffset(60, 40)
-    l.Position = UDim2.fromOffset(x, y)
-    l.BackgroundTransparency = 1
-    l.Text = text
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    l.TextColor3 = Color3.fromRGB(200, 200, 255)
-    l.Font = Enum.Font.GothamBold
-    l.TextScaled = true
-    l.Parent = Main
-    return l
-end
-
-local function MakeMinus(x, y)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.fromOffset(40, 40)
-    b.Position = UDim2.fromOffset(x, y)
-    b.BackgroundColor3 = Color3.fromRGB(85, 45, 45)
-    b.BorderSizePixel = 2
-    b.BorderColor3 = Color3.fromRGB(255, 255, 255)
-    b.Text = "-"
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    b.Font = Enum.Font.GothamBold
-    b.TextScaled = true
-    b.Parent = Main
-    return b
-end
-
-local function MakePlus(x, y)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.fromOffset(40, 40)
-    b.Position = UDim2.fromOffset(x, y)
-    b.BackgroundColor3 = Color3.fromRGB(45, 85, 45)
-    b.BorderSizePixel = 2
-    b.BorderColor3 = Color3.fromRGB(255, 255, 255)
-    b.Text = "+"
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    b.Font = Enum.Font.GothamBold
-    b.TextScaled = true
-    b.Parent = Main
-    return b
-end
-
-local function MakeValue(x, y, text, w)
-    local v = Instance.new("TextLabel")
-    v.Size = UDim2.fromOffset(w or 50, 40)
-    v.Position = UDim2.fromOffset(x, y)
-    v.BackgroundTransparency = 1
-    v.Text = text
-    v.TextColor3 = Color3.fromRGB(120, 255, 120)
-    v.Font = Enum.Font.GothamBold
-    v.TextScaled = true
-    v.Parent = Main
-    return v
-end
-
--- ============ ROWS ============
-local AimBtn, AimInner, AimLabel         = MakeSquareToggle(10, 38,  "AIM LOCK")
-local SilentBtn, SilentInner, SilentLabel = MakeSquareToggle(10, 84,  "SILENT AIM")
-
-MakeLabel(10, 130, "X OFF")
-local XMinus = MakeMinus(75, 130)
-local XVal   = MakeValue(120, 130, "0")
-local XPlus  = MakePlus(185, 130)
-
-MakeLabel(10, 176, "Y OFF")
-local YMinus = MakeMinus(75, 176)
-local YVal   = MakeValue(120, 176, "0")
-local YPlus  = MakePlus(185, 176)
-
-MakeLabel(10, 222, "SPEED")
-local SpeedMinus = MakeMinus(75, 222)
-local SpeedVal   = MakeValue(120, 222, tostring(Settings.Speed))
-local SpeedPlus  = MakePlus(185, 222)
-
-MakeLabel(10, 268, "JUMP")
-local JumpMinus = MakeMinus(75, 268)
-local JumpVal   = MakeValue(120, 268, tostring(Settings.JumpPower))
-local JumpPlus  = MakePlus(185, 268)
-
-MakeLabel(10, 314, "FOV")
-local FOVMinus = MakeMinus(75, 314)
-local FOVVal   = MakeValue(120, 314, tostring(Settings.FOV))
-local FOVPlus  = MakePlus(185, 314)
-
-local PartBtn, PartInner, PartLabel = MakeSquareToggle(10, 360, "LOCK PART")
-PartLabel.Text = "LOCK PART : HEAD"
-
-local SlideBtn, SlideInner, SlideLabel = MakeSquareToggle(10, 406, "SLIDE")
-
-local RadarBtn, RadarInner, RadarLabel = MakeSquareToggle(10, 452, "RADAR")
-SetSquare(RadarInner, true)
-RadarLabel.Text = "RADAR : ON"
-
-local FPSBtn, FPSInner, FPSLabel = MakeSquareToggle(10, 498, "FPS BOOST")
-
--- ============ CODES ============
-local defaultCodes = {
-    "SUBSCRIBED", "ENZOS", "TYPHOON", "KITT", "DRAGONABUSE",
-    "ADMIN", "3BVISITS", "UPD24", "STRAWMEN", "fudd10_v2"
-}
-
-local CodeBox = Instance.new("TextBox")
-CodeBox.Size = UDim2.fromOffset(140, 30)
-CodeBox.Position = UDim2.fromOffset(10, 544)
-CodeBox.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-CodeBox.BorderSizePixel = 2
-CodeBox.BorderColor3 = Color3.fromRGB(255, 255, 255)
-CodeBox.Text = table.concat(defaultCodes, ", ")
-CodeBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-CodeBox.Font = Enum.Font.Code
-CodeBox.TextSize = 12
-CodeBox.Parent = Main
-
-local RedeemBtn = Instance.new("TextButton")
-RedeemBtn.Size = UDim2.fromOffset(110, 30)
-RedeemBtn.Position = UDim2.fromOffset(158, 544)
-RedeemBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 160)
-RedeemBtn.BorderSizePixel = 2
-RedeemBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
-RedeemBtn.Text = "REDEEM"
-RedeemBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-RedeemBtn.Font = Enum.Font.GothamBold
-RedeemBtn.TextScaled = true
-RedeemBtn.Parent = Main
-
-local CodeStatus = Instance.new("TextLabel")
-CodeStatus.Size = UDim2.new(1, -20, 0, 18)
-CodeStatus.Position = UDim2.fromOffset(10, 578)
-CodeStatus.BackgroundTransparency = 1
-CodeStatus.Text = "Paste codes (comma separated) then REDEEM."
-CodeStatus.TextColor3 = Color3.fromRGB(255, 200, 120)
-CodeStatus.Font = Enum.Font.Gotham
-CodeStatus.TextScaled = true
-CodeStatus.Parent = Main
-
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(1, -20, 0, 30)
-CloseBtn.Position = UDim2.fromOffset(10, 598)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(85, 40, 40)
-CloseBtn.BorderSizePixel = 2
-CloseBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.Text = "HIDE GUI  [K]"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextScaled = true
-CloseBtn.Parent = Main
-
--- ============ MARKER ============
-local Marker = Instance.new("Frame")
-Marker.Size = UDim2.fromOffset(14, 14)
-Marker.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-Marker.BackgroundTransparency = 0
-Marker.BorderSizePixel = 2
-Marker.BorderColor3 = Color3.fromRGB(0, 0, 0)
-Marker.Visible = false
-Marker.ZIndex = 10
-Marker.Parent = ScreenGui
-
--- ============ FOV CIRCLE ============
-local FOVCircle = nil
-pcall(function()
-    local d = Drawing.new("Circle")
-    d.Thickness = 1
-    d.Color = Color3.fromRGB(255, 60, 60)
-    d.Transparency = 1
-    d.NumSides = 64
-    d.Visible = false
-    FOVCircle = d
-end)
-
--- ============ RADAR ============
-local RadarFrame = Instance.new("Frame")
-RadarFrame.Size = UDim2.fromOffset(170, 170)
-RadarFrame.Position = UDim2.new(1, -185, 1, -195)
-RadarFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-RadarFrame.BackgroundTransparency = 0.3
-RadarFrame.BorderSizePixel = 2
-RadarFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
-RadarFrame.Parent = ScreenGui
-
-local RadarTitle = Instance.new("TextLabel")
-RadarTitle.Size = UDim2.new(1, 0, 0, 20)
-RadarTitle.BackgroundTransparency = 1
-RadarTitle.Text = "RADAR"
-RadarTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-RadarTitle.Font = Enum.Font.GothamBold
-RadarTitle.TextScaled = true
-RadarTitle.Parent = RadarFrame
-
-local MeDot = Instance.new("Frame")
-MeDot.Size = UDim2.fromOffset(6, 6)
-MeDot.Position = UDim2.new(0.5, -3, 0.5, -3)
-MeDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-MeDot.BorderSizePixel = 0
-MeDot.Parent = RadarFrame
-
-local RadarDots = {}
-
-local function UpdateRadar()
-    local hrp = getHRP()
-    if not hrp then return end
-    local myPos = hrp.Position
-    local look = hrp.CFrame.LookVector
-    local angle = math.atan2(-look.X, -look.Z)
-    local cx = RadarFrame.AbsoluteSize.X / 2
-    local cz = RadarFrame.AbsoluteSize.Y / 2
-    local scale = (cx - 10) / Settings.RadarRange
-
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr == LocalPlayer then continue end
-        local c = plr.Character
-        local tHRP = c and c:FindFirstChild("HumanoidRootPart")
-        local dot = RadarDots[plr]
-
-        if not tHRP then
-            if dot then dot.Visible = false end
-            continue
-        end
-
-        if not dot then
-            dot = Instance.new("Frame")
-            dot.Size = UDim2.fromOffset(8, 8)
-            dot.BackgroundColor3 = (plr.Team == LocalPlayer.Team) and Color3.fromRGB(80, 200, 255) or Color3.fromRGB(255, 80, 80)
-            dot.BorderSizePixel = 0
-            dot.ZIndex = 5
-            dot.Parent = RadarFrame
-            RadarDots[plr] = dot
-        end
-
-        local rel = tHRP.Position - myPos
-        local dist = rel.Magnitude
-        if dist <= Settings.RadarRange then
-            local rx = rel.X * math.cos(angle) - rel.Z * math.sin(angle)
-            local rz = rel.X * math.sin(angle) + rel.Z * math.cos(angle)
-            dot.Visible = true
-            dot.Position = UDim2.fromOffset(cx + rx * scale - 4, cz + rz * scale - 4)
-        else
-            dot.Visible = false
-        end
-    end
-end
-
-Players.PlayerRemoving:Connect(function(plr)
-    local dot = RadarDots[plr]
-    if dot then
-        dot:Destroy()
-        RadarDots[plr] = nil
-    end
-end)
-
--- ============ TOGGLES ============
-local function ToggleAimbot()
-    Settings.Aimbot = not Settings.Aimbot
-    SetSquare(AimInner, Settings.Aimbot)
-    AimLabel.Text = "AIM LOCK : " .. (Settings.Aimbot and "ON" or "OFF")
-    local hum = getHumanoid()
-    if hum then hum.AutoRotate = not Settings.Aimbot end
-end
-
-local function ToggleSilent()
-    Settings.SilentAim = not Settings.SilentAim
-    SetSquare(SilentInner, Settings.SilentAim)
-    SilentLabel.Text = "SILENT AIM : " .. (Settings.SilentAim and "ON" or "OFF")
-end
-
-local function ToggleSlide()
-    Settings.Slide = not Settings.Slide
-    SetSquare(SlideInner, Settings.Slide)
-    SlideLabel.Text = "SLIDE : " .. (Settings.Slide and "ON" or "OFF")
-    if not Settings.Slide then
-        if SlideVel then SlideVel:Destroy() end
-        SlideVel = nil
-    end
-end
-
-local function ToggleRadar()
-    Settings.Radar = not Settings.Radar
-    SetSquare(RadarInner, Settings.Radar)
-    RadarLabel.Text = "RADAR : " .. (Settings.Radar and "ON" or "OFF")
-end
-
-local function TogglePart()
-    Settings.LockPart = Settings.LockPart == "Head" and "HumanoidRootPart" or "Head"
-    PartLabel.Text = "LOCK PART : " .. Settings.LockPart
-    SetSquare(PartInner, Settings.LockPart == "HumanoidRootPart")
-end
-
-local savedGFX = { QualityLevel = nil, Shadows = nil }
-local function ToggleFPS()
-    Settings.FPSBoost = not Settings.FPSBoost
-    SetSquare(FPSInner, Settings.FPSBoost)
-    FPSLabel.Text = "FPS BOOST : " .. (Settings.FPSBoost and "ON" or "OFF")
-    pcall(function()
-        if Settings.FPSBoost then
-            if savedGFX.QualityLevel == nil then
-                savedGFX.QualityLevel = settings().Rendering.QualityLevel
-                savedGFX.Shadows = Lighting.GlobalShadows
-            end
-            settings().Rendering.QualityLevel = 1
-            Lighting.GlobalShadows = false
-        else
-            if savedGFX.QualityLevel then
-                settings().Rendering.QualityLevel = savedGFX.QualityLevel
-                Lighting.GlobalShadows = savedGFX.Shadows
-                savedGFX.QualityLevel = nil
-            end
-        end
-    end)
-end
-
-AimBtn.MouseButton1Click:Connect(ToggleAimbot)
-SilentBtn.MouseButton1Click:Connect(ToggleSilent)
-SlideBtn.MouseButton1Click:Connect(ToggleSlide)
-RadarBtn.MouseButton1Click:Connect(ToggleRadar)
-PartBtn.MouseButton1Click:Connect(TogglePart)
-FPSBtn.MouseButton1Click:Connect(ToggleFPS)
-
-local function BindValueRow(minusBtn, plusBtn, valueLabel, varName, step, minV, maxV)
-    minusBtn.MouseButton1Click:Connect(function()
-        Settings[varName] = math.max(minV, Settings[varName] - step)
-        valueLabel.Text = tostring(Settings[varName])
-        applyStats()
-    end)
-    plusBtn.MouseButton1Click:Connect(function()
-        Settings[varName] = math.min(maxV, Settings[varName] + step)
-        valueLabel.Text = tostring(Settings[varName])
-        applyStats()
-    end)
-end
-
-BindValueRow(XMinus, XPlus, XVal, "XOffset", 1, -Settings.MaxOffset, Settings.MaxOffset)
-BindValueRow(YMinus, YPlus, YVal, "YOffset", 1, -Settings.MaxOffset, Settings.MaxOffset)
-BindValueRow(SpeedMinus, SpeedPlus, SpeedVal, "Speed", 10, 0, 500)
-BindValueRow(JumpMinus, JumpPlus, JumpVal, "JumpPower", 10, 0, 500)
-BindValueRow(FOVMinus, FOVPlus, FOVVal, "FOV", 10, 20, 360)
-
-local Minimized = false
-MinimizeBtn.MouseButton1Click:Connect(function()
-    Minimized = not Minimized
-    local h = Minimized and 32 or GUI_H
-    Main.Size = UDim2.fromOffset(GUI_W, h)
-    for _, child in ipairs(Main:GetChildren()) do
-        if child ~= TitleBar then
-            child.Visible = not Minimized
-        end
-    end
-end)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    Main.Visible = false
-end)
-
-RedeemBtn.MouseButton1Click:Connect(function()
-    local list = {}
-    for code in CodeBox.Text:gmatch("[^,%s]+") do
-        table.insert(list, code)
-    end
-    if #list == 0 then
-        for _, c in ipairs(defaultCodes) do table.insert(list, c) end
-    end
-    CodeStatus.Text = "[+] Redeeming " .. #list .. " codes..."
-    task.spawn(function()
-        for _, code in ipairs(list) do
-            pcall(function()
-                local Remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
-                if Remotes then
-                    local submit = Remotes:FindFirstChild("CodeSubmit") or Remotes:FindFirstChild("Code")
-                    if submit then submit:FireServer(code) end
-                end
-            end)
-            task.wait(0.4)
-        end
-        CodeStatus.Text = "[OK] Finished. Check chat for results."
-    end)
-end)
-
-local SlideVel = nil
-
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-
-    if input.KeyCode == Settings.AimbotKey then
-        ToggleAimbot()
-    elseif input.KeyCode == Settings.SilentKey then
-        ToggleSilent()
-    elseif input.KeyCode == Settings.HideKey then
-        Main.Visible = not Main.Visible
-    elseif input.UserInputType == Enum.UserInputType.MouseButton1 and Settings.SilentAim then
-        local target = getClosestEnemy()
-        local hrp = getHRP()
-        if target and hrp then
-            local saved = hrp.CFrame
-            hrp.CFrame = CFrame.lookAt(hrp.Position, GetAimPos(target))
-            task.wait(0.06)
-            TweenService:Create(hrp, TweenInfo.new(0.1), { CFrame = saved }):Play()
-        end
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
-    applyStats()
-    local hrp = getHRP()
-
-    if Settings.Aimbot then
-        local target = getClosestEnemy()
-        if target and hrp then
-            local aimPos = GetAimPos(target)
-            hrp.CFrame = hrp.CFrame:Lerp(CFrame.lookAt(hrp.Position, aimPos), Settings.Smoothness)
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position, aimPos), 0.35)
-        end
-    end
-
-    if Settings.Slide and hrp then
-        if not SlideVel or not SlideVel.Parent then
-            SlideVel = Instance.new("BodyVelocity")
-            SlideVel.MaxForce = Vector3.new(100000, 0, 100000)
-            SlideVel.Parent = hrp
-        end
-        local hum = getHumanoid()
-        local md = hum and hum.MoveDirection or Vector3.new()
-        if md.Magnitude > 0.1 then
-            SlideVel.Velocity = md * Settings.SlideSpeed
-        else
-            SlideVel.Velocity = Vector3.new(SlideVel.Velocity.X * 0.92, 0, SlideVel.Velocity.Z * 0.92)
-        end
-    elseif SlideVel then
-        SlideVel:Destroy()
-        SlideVel = nil
-    end
-
-    if Settings.SilentAim then
-        local target = getClosestEnemy()
-        if target then
-            local sp, onScreen = Camera:WorldToViewportPoint(GetAimPos(target))
-            if onScreen and sp.Z > 0 then
-                Marker.Visible = true
-                Marker.Position = UDim2.fromOffset(sp.X - 7, sp.Y - 7)
-            else
-                Marker.Visible = false
-            end
-        else
-            Marker.Visible = false
-        end
-    else
-        Marker.Visible = false
-    end
-
-    if FOVCircle then
-        FOVCircle.Position = Camera.ViewportSize / 2
-        FOVCircle.Radius = Settings.FOV
-        FOVCircle.Visible = Settings.Aimbot or Settings.SilentAim
-    end
-
-    if Settings.Radar then
-        RadarFrame.Visible = true
-        UpdateRadar()
-    else
-        RadarFrame.Visible = false
-    end
-end)
-
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(1)
-    applyStats()
-end)
-
-print("[BFUltra v3] Loaded. R = Aimbot | T = Silent Aim | K = Hide/Show GUI")--[[
-    BLOX FRUITS ULTRA v3
-    ====================
-    - Advanced Aimbot (smooth + prediction)
-    - Silent Aim (prediction + X/Y offset)
-    - Speed / Jump / FOV control
-    - Slide (ice glide)
-    - Radar (detects players)
-    - Code Redeemer
-    - X / Y aim offset (max 20 each)
-    Keys:
-        R = Aimbot      T = Silent Aim      K = Hide/Show GUI
-]]
-
-getgenv().BFUltra = getgenv().BFUltra or {}
-if getgenv().BFUltra.Loaded then
-    warn("[BFUltra] Already loaded. Restart Roblox to reload.")
-    return
-end
-getgenv().BFUltra.Loaded = true
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local Lighting = game:GetService("Lighting")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-
-local Settings = {
-    Aimbot     = false,
-    SilentAim  = false,
-    TeamCheck  = true,
-    FOV        = 180,
-    LockPart   = "Head",
-    Prediction = 0.12,
-    Smoothness = 0.35,
-    XOffset    = 0,
-    YOffset    = 0,
-    MaxOffset  = 20,
-    Speed      = 100,
-    JumpPower  = 100,
-    Slide      = false,
-    SlideSpeed = 150,
-    Radar      = true,
-    RadarRange = 350,
-    FPSBoost   = false,
-    AimbotKey  = Enum.KeyCode.R,
-    SilentKey  = Enum.KeyCode.T,
-    HideKey    = Enum.KeyCode.K,
-}
-
--- ================= HELPERS =================
-local function getChar()   return LocalPlayer.Character end
-
-local function getHRP()
-    local c = getChar()
-    return c and c:FindFirstChild("HumanoidRootPart")
-end
-
-local function getHumanoid()
-    local c = getChar()
-    return c and c:FindFirstChildOfClass("Humanoid")
-end
-
-local function applyStats()
-    local hum = getHumanoid()
-    if not hum then return end
-    hum.WalkSpeed = Settings.Speed
-    hum.JumpPower = Settings.JumpPower
-end
-
-local function IsEnemy(plr)
-    if plr == LocalPlayer then return false end
-    if Settings.TeamCheck and plr.Team == LocalPlayer.Team then return false end
-    return true
-end
-
-local function GetPredictedPos(part)
-    if not part then return nil end
-    local hrp = getHRP()
-    if not hrp then return part.Position end
-    local vel = part.Velocity or Vector3.new()
-    return part.Position + vel * Settings.Prediction
-end
-
-local function GetAimPos(part)
-    local p = GetPredictedPos(part)
-    if not p then return nil end
-    local camCF = Camera.CFrame
-    return p + camCF.RightVector * Settings.XOffset + camCF.UpVector * Settings.YOffset
-end
-
-local function getClosestEnemy()
-    local hrp = getHRP()
-    if not hrp then return nil end
-    local best, bestDist = nil, Settings.FOV
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if not IsEnemy(plr) then continue end
-        local c = plr.Character
-        if not c then continue end
-        local part = c:FindFirstChild(Settings.LockPart) or c:FindFirstChild("HumanoidRootPart")
-        if not part then continue end
-        local sp, onScreen = Camera:WorldToViewportPoint(part.Position)
-        if not onScreen then continue end
-        local dist = (Vector2.new(sp.X, sp.Y) - Camera.ViewportSize / 2).Magnitude
-        if dist < bestDist then
-            bestDist = dist
-            best = part
-        end
-    end
-    return best
-end
-
--- ================= GUI =================
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BFUltraGui"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-local GUI_W = 280
-local GUI_H = 634
-
-local Main = Instance.new("Frame")
-Main.Size = UDim2.fromOffset(GUI_W, GUI_H)
-Main.Position = UDim2.fromOffset(15, 150)
-Main.BackgroundColor3 = Color3.fromRGB(16, 16, 26)
-Main.BorderSizePixel = 2
-Main.BorderColor3 = Color3.fromRGB(255, 255, 255)
-Main.Active = true
-Main.Draggable = true
-Main.Parent = ScreenGui
-
-local TitleBar = Instance.new("Frame")
-TitleBar.Size = UDim2.new(1, 0, 0, 32)
-TitleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 70)
-TitleBar.BorderSizePixel = 0
-TitleBar.Parent = Main
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -40, 1, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "BLOX FRUITS ULTRA v3"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextScaled = true
-Title.Parent = TitleBar
-
-local MinimizeBtn = Instance.new("TextButton")
-MinimizeBtn.Size = UDim2.fromOffset(32, 32)
-MinimizeBtn.Position = UDim2.new(1, -32, 0, 0)
-MinimizeBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 95)
-MinimizeBtn.BorderSizePixel = 0
-MinimizeBtn.Text = "-"
-MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeBtn.Font = Enum.Font.GothamBold
-MinimizeBtn.TextScaled = true
-MinimizeBtn.Parent = TitleBar
-
-local function MakeSquareToggle(x, y, label)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.fromOffset(40, 40)
-    btn.Position = UDim2.fromOffset(x, y)
-    btn.BackgroundColor3 = Color3.fromRGB(55, 55, 75)
-    btn.BorderSizePixel = 2
-    btn.BorderColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Text = ""
-    btn.Parent = Main
-
-    local inner = Instance.new("Frame")
-    inner.Size = UDim2.fromOffset(24, 24)
-    inner.Position = UDim2.new(0.5, -12, 0.5, -12)
-    inner.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    inner.BackgroundTransparency = 1
-    inner.BorderSizePixel = 2
-    inner.BorderColor3 = Color3.fromRGB(255, 255, 255)
-    inner.Parent = btn
-
-    local lab = Instance.new("TextLabel")
-    lab.Size = UDim2.fromOffset(200, 40)
-    lab.Position = UDim2.fromOffset(x + 48, y)
-    lab.BackgroundTransparency = 1
-    lab.Text = label .. " : OFF"
-    lab.TextXAlignment = Enum.TextXAlignment.Left
-    lab.TextColor3 = Color3.fromRGB(255, 255, 255)
-    lab.Font = Enum.Font.GothamBold
-    lab.TextScaled = true
-    lab.Parent = Main
-
-    return btn, inner, lab
-end
-
-local function SetSquare(inner, on)
-    inner.BackgroundTransparency = on and 0 or 1
-end
-
-local function MakeLabel(x, y, text)
-    local l = Instance.new("TextLabel")
-    l.Size = UDim2.fromOffset(60, 40)
-    l.Position = UDim2.fromOffset(x, y)
-    l.BackgroundTransparency = 1
-    l.Text = text
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    l.TextColor3 = Color3.fromRGB(200, 200, 255)
-    l.Font = Enum.Font.GothamBold
-    l.TextScaled = true
-    l.Parent = Main
-    return l
-end
-
-local function MakeMinus(x, y)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.fromOffset(40, 40)
-    b.Position = UDim2.fromOffset(x, y)
-    b.BackgroundColor3 = Color3.fromRGB(85, 45, 45)
-    b.BorderSizePixel = 2
-    b.BorderColor3 = Color3.fromRGB(255, 255, 255)
-    b.Text = "-"
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    b.Font = Enum.Font.GothamBold
-    b.TextScaled = true
-    b.Parent = Main
-    return b
-end
-
-local function MakePlus(x, y)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.fromOffset(40, 40)
-    b.Position = UDim2.fromOffset(x, y)
-    b.BackgroundColor3 = Color3.fromRGB(45, 85, 45)
-    b.BorderSizePixel = 2
-    b.BorderColor3 = Color3.fromRGB(255, 255, 255)
-    b.Text = "+"
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    b.Font = Enum.Font.GothamBold
-    b.TextScaled = true
-    b.Parent = Main
-    return b
-end
-
-local function MakeValue(x, y, text, w)
-    local v = Instance.new("TextLabel")
-    v.Size = UDim2.fromOffset(w or 50, 40)
-    v.Position = UDim2.fromOffset(x, y)
-    v.BackgroundTransparency = 1
-    v.Text = text
-    v.TextColor3 = Color3.fromRGB(120, 255, 120)
-    v.Font = Enum.Font.GothamBold
-    v.TextScaled = true
-    v.Parent = Main
-    return v
-end
-
--- ============ ROWS ============
-local AimBtn, AimInner, AimLabel         = MakeSquareToggle(10, 38,  "AIM LOCK")
-local SilentBtn, SilentInner, SilentLabel = MakeSquareToggle(10, 84,  "SILENT AIM")
-
-MakeLabel(10, 130, "X OFF")
-local XMinus = MakeMinus(75, 130)
-local XVal   = MakeValue(120, 130, "0")
-local XPlus  = MakePlus(185, 130)
-
-MakeLabel(10, 176, "Y OFF")
-local YMinus = MakeMinus(75, 176)
-local YVal   = MakeValue(120, 176, "0")
-local YPlus  = MakePlus(185, 176)
-
-MakeLabel(10, 222, "SPEED")
-local SpeedMinus = MakeMinus(75, 222)
-local SpeedVal   = MakeValue(120, 222, tostring(Settings.Speed))
-local SpeedPlus  = MakePlus(185, 222)
-
-MakeLabel(10, 268, "JUMP")
-local JumpMinus = MakeMinus(75, 268)
-local JumpVal   = MakeValue(120, 268, tostring(Settings.JumpPower))
-local JumpPlus  = MakePlus(185, 268)
-
-MakeLabel(10, 314, "FOV")
-local FOVMinus = MakeMinus(75, 314)
-local FOVVal   = MakeValue(120, 314, tostring(Settings.FOV))
-local FOVPlus  = MakePlus(185, 314)
-
-local PartBtn, PartInner, PartLabel = MakeSquareToggle(10, 360, "LOCK PART")
-PartLabel.Text = "LOCK PART : HEAD"
-
-local SlideBtn, SlideInner, SlideLabel = MakeSquareToggle(10, 406, "SLIDE")
-
-local RadarBtn, RadarInner, RadarLabel = MakeSquareToggle(10, 452, "RADAR")
-SetSquare(RadarInner, true)
-RadarLabel.Text = "RADAR : ON"
-
-local FPSBtn, FPSInner, FPSLabel = MakeSquareToggle(10, 498, "FPS BOOST")
-
--- ============ CODES ============
-local defaultCodes = {
-    "SUBSCRIBED", "ENZOS", "TYPHOON", "KITT", "DRAGONABUSE",
-    "ADMIN", "3BVISITS", "UPD24", "STRAWMEN", "fudd10_v2"
-}
-
-local CodeBox = Instance.new("TextBox")
-CodeBox.Size = UDim2.fromOffset(140, 30)
-CodeBox.Position = UDim2.fromOffset(10, 544)
-CodeBox.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-CodeBox.BorderSizePixel = 2
-CodeBox.BorderColor3 = Color3.fromRGB(255, 255, 255)
-CodeBox.Text = table.concat(defaultCodes, ", ")
-CodeBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-CodeBox.Font = Enum.Font.Code
-CodeBox.TextSize = 12
-CodeBox.Parent = Main
-
-local RedeemBtn = Instance.new("TextButton")
-RedeemBtn.Size = UDim2.fromOffset(110, 30)
-RedeemBtn.Position = UDim2.fromOffset(158, 544)
-RedeemBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 160)
-RedeemBtn.BorderSizePixel = 2
-RedeemBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
-RedeemBtn.Text = "REDEEM"
-RedeemBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-RedeemBtn.Font = Enum.Font.GothamBold
-RedeemBtn.TextScaled = true
-RedeemBtn.Parent = Main
-
-local CodeStatus = Instance.new("TextLabel")
-CodeStatus.Size = UDim2.new(1, -20, 0, 18)
-CodeStatus.Position = UDim2.fromOffset(10, 578)
-CodeStatus.BackgroundTransparency = 1
-CodeStatus.Text = "Paste codes (comma separated) then REDEEM."
-CodeStatus.TextColor3 = Color3.fromRGB(255, 200, 120)
-CodeStatus.Font = Enum.Font.Gotham
-CodeStatus.TextScaled = true
-CodeStatus.Parent = Main
-
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(1, -20, 0, 30)
-CloseBtn.Position = UDim2.fromOffset(10, 598)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(85, 40, 40)
-CloseBtn.BorderSizePixel = 2
-CloseBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.Text = "HIDE GUI  [K]"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextScaled = true
-CloseBtn.Parent = Main
-
--- ============ MARKER ============
-local Marker = Instance.new("Frame")
-Marker.Size = UDim2.fromOffset(14, 14)
-Marker.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-Marker.BackgroundTransparency = 0
-Marker.BorderSizePixel = 2
-Marker.BorderColor3 = Color3.fromRGB(0, 0, 0)
-Marker.Visible = false
-Marker.ZIndex = 10
-Marker.Parent = ScreenGui
-
--- ============ FOV CIRCLE ============
-local FOVCircle = nil
-pcall(function()
-    local d = Drawing.new("Circle")
-    d.Thickness = 1
-    d.Color = Color3.fromRGB(255, 60, 60)
-    d.Transparency = 1
-    d.NumSides = 64
-    d.Visible = false
-    FOVCircle = d
-end)
-
--- ============ RADAR ============
-local RadarFrame = Instance.new("Frame")
-RadarFrame.Size = UDim2.fromOffset(170, 170)
-RadarFrame.Position = UDim2.new(1, -185, 1, -195)
-RadarFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-RadarFrame.BackgroundTransparency = 0.3
-RadarFrame.BorderSizePixel = 2
-RadarFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
-RadarFrame.Parent = ScreenGui
-
-local RadarTitle = Instance.new("TextLabel")
-RadarTitle.Size = UDim2.new(1, 0, 0, 20)
-RadarTitle.BackgroundTransparency = 1
-RadarTitle.Text = "RADAR"
-RadarTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-RadarTitle.Font = Enum.Font.GothamBold
-RadarTitle.TextScaled = true
-RadarTitle.Parent = RadarFrame
-
-local MeDot = Instance.new("Frame")
-MeDot.Size = UDim2.fromOffset(6, 6)
-MeDot.Position = UDim2.new(0.5, -3, 0.5, -3)
-MeDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-MeDot.BorderSizePixel = 0
-MeDot.Parent = RadarFrame
-
-local RadarDots = {}
-
-local function UpdateRadar()
-    local hrp = getHRP()
-    if not hrp then return end
-    local myPos = hrp.Position
-    local look = hrp.CFrame.LookVector
-    local angle = math.atan2(-look.X, -look.Z)
-    local cx = RadarFrame.AbsoluteSize.X / 2
-    local cz = RadarFrame.AbsoluteSize.Y / 2
-    local scale = (cx - 10) / Settings.RadarRange
-
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr == LocalPlayer then continue end
-        local c = plr.Character
-        local tHRP = c and c:FindFirstChild("HumanoidRootPart")
-        local dot = RadarDots[plr]
-
-        if not tHRP then
-            if dot then dot.Visible = false end
-            continue
-        end
-
-        if not dot then
-            dot = Instance.new("Frame")
-            dot.Size = UDim2.fromOffset(8, 8)
-            dot.BackgroundColor3 = (plr.Team == LocalPlayer.Team) and Color3.fromRGB(80, 200, 255) or Color3.fromRGB(255, 80, 80)
-            dot.BorderSizePixel = 0
-            dot.ZIndex = 5
-            dot.Parent = RadarFrame
-            RadarDots[plr] = dot
-        end
-
-        local rel = tHRP.Position - myPos
-        local dist = rel.Magnitude
-        if dist <= Settings.RadarRange then
-            local rx = rel.X * math.cos(angle) - rel.Z * math.sin(angle)
-            local rz = rel.X * math.sin(angle) + rel.Z * math.cos(angle)
-            dot.Visible = true
-            dot.Position = UDim2.fromOffset(cx + rx * scale - 4, cz + rz * scale - 4)
-        else
-            dot.Visible = false
-        end
-    end
-end
-
-Players.PlayerRemoving:Connect(function(plr)
-    local dot = RadarDots[plr]
-    if dot then
-        dot:Destroy()
-        RadarDots[plr] = nil
-    end
-end)
-
--- ============ TOGGLES ============
-local function ToggleAimbot()
-    Settings.Aimbot = not Settings.Aimbot
-    SetSquare(AimInner, Settings.Aimbot)
-    AimLabel.Text = "AIM LOCK : " .. (Settings.Aimbot and "ON" or "OFF")
-    local hum = getHumanoid()
-    if hum then hum.AutoRotate = not Settings.Aimbot end
-end
-
-local function ToggleSilent()
-    Settings.SilentAim = not Settings.SilentAim
-    SetSquare(SilentInner, Settings.SilentAim)
-    SilentLabel.Text = "SILENT AIM : " .. (Settings.SilentAim and "ON" or "OFF")
-end
-
-local function ToggleSlide()
-    Settings.Slide = not Settings.Slide
-    SetSquare(SlideInner, Settings.Slide)
-    SlideLabel.Text = "SLIDE : " .. (Settings.Slide and "ON" or "OFF")
-    if not Settings.Slide then
-        if SlideVel then SlideVel:Destroy() end
-        SlideVel = nil
-    end
-end
-
-local function ToggleRadar()
-    Settings.Radar = not Settings.Radar
-    SetSquare(RadarInner, Settings.Radar)
-    RadarLabel.Text = "RADAR : " .. (Settings.Radar and "ON" or "OFF")
-end
-
-local function TogglePart()
-    Settings.LockPart = Settings.LockPart == "Head" and "HumanoidRootPart" or "Head"
-    PartLabel.Text = "LOCK PART : " .. Settings.LockPart
-    SetSquare(PartInner, Settings.LockPart == "HumanoidRootPart")
-end
-
-local savedGFX = { QualityLevel = nil, Shadows = nil }
-local function ToggleFPS()
-    Settings.FPSBoost = not Settings.FPSBoost
-    SetSquare(FPSInner, Settings.FPSBoost)
-    FPSLabel.Text = "FPS BOOST : " .. (Settings.FPSBoost and "ON" or "OFF")
-    pcall(function()
-        if Settings.FPSBoost then
-            if savedGFX.QualityLevel == nil then
-                savedGFX.QualityLevel = settings().Rendering.QualityLevel
-                savedGFX.Shadows = Lighting.GlobalShadows
-            end
-            settings().Rendering.QualityLevel = 1
-            Lighting.GlobalShadows = false
-        else
-            if savedGFX.QualityLevel then
-                settings().Rendering.QualityLevel = savedGFX.QualityLevel
-                Lighting.GlobalShadows = savedGFX.Shadows
-                savedGFX.QualityLevel = nil
-            end
-        end
-    end)
-end
-
-AimBtn.MouseButton1Click:Connect(ToggleAimbot)
-SilentBtn.MouseButton1Click:Connect(ToggleSilent)
-SlideBtn.MouseButton1Click:Connect(ToggleSlide)
-RadarBtn.MouseButton1Click:Connect(ToggleRadar)
-PartBtn.MouseButton1Click:Connect(TogglePart)
-FPSBtn.MouseButton1Click:Connect(ToggleFPS)
-
-local function BindValueRow(minusBtn, plusBtn, valueLabel, varName, step, minV, maxV)
-    minusBtn.MouseButton1Click:Connect(function()
-        Settings[varName] = math.max(minV, Settings[varName] - step)
-        valueLabel.Text = tostring(Settings[varName])
-        applyStats()
-    end)
-    plusBtn.MouseButton1Click:Connect(function()
-        Settings[varName] = math.min(maxV, Settings[varName] + step)
-        valueLabel.Text = tostring(Settings[varName])
-        applyStats()
-    end)
-end
-
-BindValueRow(XMinus, XPlus, XVal, "XOffset", 1, -Settings.MaxOffset, Settings.MaxOffset)
-BindValueRow(YMinus, YPlus, YVal, "YOffset", 1, -Settings.MaxOffset, Settings.MaxOffset)
-BindValueRow(SpeedMinus, SpeedPlus, SpeedVal, "Speed", 10, 0, 500)
-BindValueRow(JumpMinus, JumpPlus, JumpVal, "JumpPower", 10, 0, 500)
-BindValueRow(FOVMinus, FOVPlus, FOVVal, "FOV", 10, 20, 360)
-
-local Minimized = false
-MinimizeBtn.MouseButton1Click:Connect(function()
-    Minimized = not Minimized
-    local h = Minimized and 32 or GUI_H
-    Main.Size = UDim2.fromOffset(GUI_W, h)
-    for _, child in ipairs(Main:GetChildren()) do
-        if child ~= TitleBar then
-            child.Visible = not Minimized
-        end
-    end
-end)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    Main.Visible = false
-end)
-
-RedeemBtn.MouseButton1Click:Connect(function()
-    local list = {}
-    for code in CodeBox.Text:gmatch("[^,%s]+") do
-        table.insert(list, code)
-    end
-    if #list == 0 then
-        for _, c in ipairs(defaultCodes) do table.insert(list, c) end
-    end
-    CodeStatus.Text = "[+] Redeeming " .. #list .. " codes..."
-    task.spawn(function()
-        for _, code in ipairs(list) do
-            pcall(function()
-                local Remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
-                if Remotes then
-                    local submit = Remotes:FindFirstChild("CodeSubmit") or Remotes:FindFirstChild("Code")
-                    if submit then submit:FireServer(code) end
-                end
-            end)
-            task.wait(0.4)
-        end
-        CodeStatus.Text = "[OK] Finished. Check chat for results."
-    end)
-end)
-
-local SlideVel = nil
-
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-
-    if input.KeyCode == Settings.AimbotKey then
-        ToggleAimbot()
-    elseif input.KeyCode == Settings.SilentKey then
-        ToggleSilent()
-    elseif input.KeyCode == Settings.HideKey then
-        Main.Visible = not Main.Visible
-    elseif input.UserInputType == Enum.UserInputType.MouseButton1 and Settings.SilentAim then
-        local target = getClosestEnemy()
-        local hrp = getHRP()
-        if target and hrp then
-            local saved = hrp.CFrame
-            hrp.CFrame = CFrame.lookAt(hrp.Position, GetAimPos(target))
-            task.wait(0.06)
-            TweenService:Create(hrp, TweenInfo.new(0.1), { CFrame = saved }):Play()
-        end
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
-    applyStats()
-    local hrp = getHRP()
-
-    if Settings.Aimbot then
-        local target = getClosestEnemy()
-        if target and hrp then
-            local aimPos = GetAimPos(target)
-            hrp.CFrame = hrp.CFrame:Lerp(CFrame.lookAt(hrp.Position, aimPos), Settings.Smoothness)
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position, aimPos), 0.35)
-        end
-    end
-
-    if Settings.Slide and hrp then
-        if not SlideVel or not SlideVel.Parent then
-            SlideVel = Instance.new("BodyVelocity")
-            SlideVel.MaxForce = Vector3.new(100000, 0, 100000)
-            SlideVel.Parent = hrp
-        end
-        local hum = getHumanoid()
-        local md = hum and hum.MoveDirection or Vector3.new()
-        if md.Magnitude > 0.1 then
-            SlideVel.Velocity = md * Settings.SlideSpeed
-        else
-            SlideVel.Velocity = Vector3.new(SlideVel.Velocity.X * 0.92, 0, SlideVel.Velocity.Z * 0.92)
-        end
-    elseif SlideVel then
-        SlideVel:Destroy()
-        SlideVel = nil
-    end
-
-    if Settings.SilentAim then
-        local target = getClosestEnemy()
-        if target then
-            local sp, onScreen = Camera:WorldToViewportPoint(GetAimPos(target))
-            if onScreen and sp.Z > 0 then
-                Marker.Visible = true
-                Marker.Position = UDim2.fromOffset(sp.X - 7, sp.Y - 7)
-            else
-                Marker.Visible = false
-            end
-        else
-            Marker.Visible = false
-        end
-    else
-        Marker.Visible = false
-    end
-
-    if FOVCircle then
-        FOVCircle.Position = Camera.ViewportSize / 2
-        FOVCircle.Radius = Settings.FOV
-        FOVCircle.Visible = Settings.Aimbot or Settings.SilentAim
-    end
-
-    if Settings.Radar then
-        RadarFrame.Visible = true
-        UpdateRadar()
-    else
-        RadarFrame.Visible = false
-    end
-end)
-
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(1)
-    applyStats()
-end)
-
-print("[BFUltra v3] Loaded. R = Aimbot | T = Silent Aim | K = Hide/Show GUI")vv
+return VMCall("LOL!B73Q0003073Q0067657467656E7603073Q004246556C74726103063Q004C6F6164656403043Q007761726E03333Q005B4246556C7472615D20416C7265616479206C6F616465642E205265737461727420526F626C6F7820746F2072656C6F61642E2Q0103043Q0067616D65030A3Q004765745365727669636503073Q00506C6179657273030A3Q0052756E5365727669636503103Q0055736572496E70757453657276696365030C3Q0054772Q656E5365727669636503083Q004C69676874696E67030B3Q004C6F63616C506C6179657203093Q00776F726B7370616365030D3Q0043752Q72656E7443616D65726103063Q0041696D626F74010003093Q0053696C656E7441696D03093Q005465616D436865636B2Q033Q00464F56025Q0080664003083Q004C6F636B5061727403043Q0048656164030A3Q0050726564696374696F6E02B81E85EB51B8BE3F030A3Q00536D2Q6F74686E652Q73026Q66D63F03073Q00584F2Q66736574028Q0003073Q00594F2Q6673657403093Q004D61784F2Q66736574026Q00344003053Q0053702Q6564026Q00594003093Q004A756D70506F77657203053Q00536C696465030A3Q00536C69646553702Q6564025Q00C0624003053Q005261646172030A3Q00526164617252616E6765025Q00E0754003083Q00465053422Q6F737403093Q0041696D626F744B657903043Q00456E756D03073Q004B6579436F646503013Q005203093Q0053696C656E744B657903013Q005403073Q00486964654B657903013Q004B03083Q00496E7374616E63652Q033Q006E657703093Q005363722Q656E47756903043Q004E616D65030A3Q004246556C747261477569030C3Q0052657365744F6E537061776E03063Q00506172656E74030C3Q0057616974466F724368696C6403093Q00506C61796572477569025Q00807140025Q00D0834003053Q004672616D6503043Q0053697A6503053Q005544696D32030A3Q0066726F6D4F2Q6673657403083Q00506F736974696F6E026Q002E4003103Q004261636B67726F756E64436F6C6F723303063Q00436F6C6F723303073Q0066726F6D524742026Q003040026Q003A40030F3Q00426F7264657253697A65506978656C027Q0040030C3Q00426F72646572436F6C6F7233025Q00E06F4003063Q0041637469766503093Q004472612Q6761626C65026Q00F03F026Q002Q40025Q00804640025Q0080514003093Q00546578744C6162656C026Q0044C003163Q004261636B67726F756E645472616E73706172656E637903043Q005465787403143Q00424C4F582046525549545320554C545241207633030A3Q0054657874436F6C6F723303043Q00466F6E74030A3Q00476F7468616D426F6C64030A3Q00546578745363616C6564030A3Q005465787442752Q746F6E026Q0040C0025Q00C0574003013Q002D026Q002440026Q00434003083Q0041494D204C4F434B026Q005540030A3Q0053494C454E542041494D025Q0040604003053Q0058204F2Q46025Q00C05240026Q005E4003013Q0030025Q00206740026Q00664003053Q0059204F2Q46025Q00C06B4003053Q0053502Q454403083Q00746F737472696E67025Q00C0704003043Q004A554D50025Q00A07340025Q0080764003093Q004C4F434B205041525403103Q004C4F434B2050415254203A2048454144025Q0060794003053Q00534C494445025Q00407C4003053Q005241444152030A3Q005241444152203A204F4E025Q00207F4003093Q0046505320422Q4F5354030A3Q005355425343524942454403053Q00454E5A4F5303073Q00545950482Q4F4E03043Q004B492Q54030B3Q00445241474F4E414255534503053Q0041444D494E03083Q00334256495349545303053Q00555044323403083Q0053545241574D454E03093Q0066752Q6431305F763203073Q0054657874426F78025Q00806140026Q003E40026Q00814003053Q007461626C6503063Q00636F6E63617403023Q002C2003043Q00436F646503083Q005465787453697A65026Q002840025Q00805B40025Q00C06340026Q004E40026Q00644003063Q005245442Q454D026Q0034C0026Q003240025Q00108240032A3Q00506173746520636F6465732028636F2Q6D612073657061726174656429207468656E205245442Q454D2E026Q00694003063Q00476F7468616D025Q00B08240025Q00405540026Q004440030D3Q0048494445204755492Q205B4B5D026Q002C4003073Q0056697369626C6503063Q005A496E64657803053Q007063612Q6C025Q00406540025Q002067C0025Q006068C0026Q33D33F026Q001840026Q00E03F026Q0008C0030E3Q00506C6179657252656D6F76696E6703073Q00436F2Q6E656374030C3Q005175616C6974794C6576656C0003073Q00536861646F777303113Q004D6F75736542752Q746F6E31436C69636B025Q00407F40030A3Q00496E707574426567616E030D3Q0052656E6465725374652Q706564030E3Q00436861726163746572412Q64656403053Q007072696E7403443Q005B4246556C7472612076335D204C6F616465642E2052203D2041696D626F74207C2054203D2053696C656E742041696D207C204B203D20486964652F53686F77204755490067032Q00122F3Q00014Q00133Q0001000200122F000100014Q001300010001000200203800010001000200061F00010008000100010004663Q000800012Q005500015Q0010263Q0002000100122F3Q00014Q00133Q000100020020385Q00020020385Q00030006483Q001300013Q0004663Q0013000100122F3Q00043Q001208000100054Q000A3Q000200012Q003C3Q00013Q00122F3Q00014Q00133Q000100020020385Q00020030043Q0003000600122F3Q00073Q0020725Q0008001208000200094Q001B3Q0002000200122F000100073Q0020720001000100080012080003000A4Q001B00010003000200122F000200073Q0020720002000200080012080004000B4Q001B00020004000200122F000300073Q0020720003000300080012080005000C4Q001B00030005000200122F000400073Q0020720004000400080012080006000D4Q001B00040006000200203800053Q000E00122F0006000F3Q0020380006000600102Q005500073Q001200300400070011001200300400070013001200300400070014000600300400070015001600300400070017001800300400070019001A0030040007001B001C0030040007001D001E0030040007001F001E00300400070020002100300400070022002300300400070024002300300400070025001200300400070026002700300400070028000600300400070029002A0030040007002B001200122F0008002D3Q00203800080008002E00203800080008002F0010260007002C000800122F0008002D3Q00203800080008002E00203800080008003100102600070030000800122F0008002D3Q00203800080008002E00203800080008003300102600070032000800065300083Q000100012Q00753Q00053Q00065300090001000100012Q00753Q00083Q000653000A0002000100012Q00753Q00083Q000653000B0003000100022Q00753Q000A4Q00753Q00073Q000653000C0004000100022Q00753Q00054Q00753Q00073Q000653000D0005000100022Q00753Q00094Q00753Q00073Q000653000E0006000100032Q00753Q000D4Q00753Q00064Q00753Q00073Q000653000F0007000100052Q00753Q00094Q00753Q00074Q00758Q00753Q000C4Q00753Q00063Q00122F001000343Q002038001000100035001208001100364Q000F00100002000200300400100037003800300400100039001200207200110005003B0012080013003C4Q001B0011001300020010260010003A00110012080011003D3Q0012080012003E3Q00122F001300343Q0020380013001300350012080014003F4Q000F00130002000200122F001400413Q0020380014001400422Q0003001500114Q0003001600124Q001B00140016000200102600130040001400122F001400413Q002038001400140042001208001500443Q001208001600274Q001B00140016000200102600130043001400122F001400463Q002038001400140047001208001500483Q001208001600483Q001208001700494Q001B0014001700020010260013004500140030040013004A004B00122F001400463Q0020380014001400470012080015004D3Q0012080016004D3Q0012080017004D4Q001B0014001700020010260013004C00140030040013004E00060030040013004F00060010260013003A001000122F001400343Q0020380014001400350012080015003F4Q000F00140002000200122F001500413Q002038001500150035001208001600503Q0012080017001E3Q0012080018001E3Q001208001900514Q001B00150019000200102600140040001500122F001500463Q002038001500150047001208001600523Q001208001700523Q001208001800534Q001B0015001800020010260014004500150030040014004A001E0010260014003A001300122F001500343Q002038001500150035001208001600544Q000F00150002000200122F001600413Q002038001600160035001208001700503Q001208001800553Q001208001900503Q001208001A001E4Q001B0016001A000200102600150040001600300400150056005000300400150057005800122F001600463Q0020380016001600470012080017004D3Q0012080018004D3Q0012080019004D4Q001B00160019000200102600150059001600122F0016002D3Q00203800160016005A00203800160016005B0010260015005A00160030040015005C00060010260015003A001400122F001600343Q0020380016001600350012080017005D4Q000F00160002000200122F001700413Q002038001700170042001208001800513Q001208001900514Q001B00170019000200102600160040001700122F001700413Q002038001700170035001208001800503Q0012080019005E3Q001208001A001E3Q001208001B001E4Q001B0017001B000200102600160043001700122F001700463Q002038001700170047001208001800533Q001208001900533Q001208001A005F4Q001B0017001A00020010260016004500170030040016004A001E00300400160057006000122F001700463Q0020380017001700470012080018004D3Q0012080019004D3Q001208001A004D4Q001B0017001A000200102600160059001700122F0017002D3Q00203800170017005A00203800170017005B0010260016005A00170030040016005C00060010260016003A001400065300170008000100012Q00753Q00133Q00020E001800093Q0006530019000A000100012Q00753Q00133Q000653001A000B000100012Q00753Q00133Q000653001B000C000100012Q00753Q00133Q000653001C000D000100012Q00753Q00134Q0003001D00173Q001208001E00613Q001208001F00623Q001208002000634Q000D001D0020001F2Q0003002000173Q001208002100613Q001208002200643Q001208002300654Q000D0020002300222Q0003002300193Q001208002400613Q001208002500663Q001208002600674Q00330023002600012Q00030023001A3Q001208002400683Q001208002500664Q001B0023002500022Q00030024001C3Q001208002500693Q001208002600663Q0012080027006A4Q001B0024002700022Q00030025001B3Q0012080026006B3Q001208002700664Q001B0025002700022Q0003002600193Q001208002700613Q0012080028006C3Q0012080029006D4Q00330026002900012Q00030026001A3Q001208002700683Q0012080028006C4Q001B0026002800022Q00030027001C3Q001208002800693Q0012080029006C3Q001208002A006A4Q001B0027002A00022Q00030028001B3Q0012080029006B3Q001208002A006C4Q001B0028002A00022Q0003002900193Q001208002A00613Q001208002B006E3Q001208002C006F4Q00330029002C00012Q00030029001A3Q001208002A00683Q001208002B006E4Q001B0029002B00022Q0003002A001C3Q001208002B00693Q001208002C006E3Q00122F002D00703Q002038002E000700222Q0020002D002E4Q0056002A3Q00022Q0003002B001B3Q001208002C006B3Q001208002D006E4Q001B002B002D00022Q0003002C00193Q001208002D00613Q001208002E00713Q001208002F00724Q0033002C002F00012Q0003002C001A3Q001208002D00683Q001208002E00714Q001B002C002E00022Q0003002D001C3Q001208002E00693Q001208002F00713Q00122F003000703Q0020380031000700242Q0020003000314Q0056002D3Q00022Q0003002E001B3Q001208002F006B3Q001208003000714Q001B002E003000022Q0003002F00193Q001208003000613Q001208003100733Q001208003200154Q0033002F003200012Q0003002F001A3Q001208003000683Q001208003100734Q001B002F003100022Q00030030001C3Q001208003100693Q001208003200733Q00122F003300703Q0020380034000700152Q0020003300344Q005600303Q00022Q00030031001B3Q0012080032006B3Q001208003300734Q001B0031003300022Q0003003200173Q001208003300613Q001208003400743Q001208003500754Q000D0032003500340030040034005700762Q0003003500173Q001208003600613Q001208003700773Q001208003800784Q000D0035003800372Q0003003800173Q001208003900613Q001208003A00793Q001208003B007A4Q000D0038003B003A2Q0003003B00184Q0003003C00394Q0010003D00014Q0033003B003D0001003004003A0057007B2Q0003003B00173Q001208003C00613Q001208003D007C3Q001208003E007D4Q000D003B003E003D2Q0055003E000A3Q001208003F007E3Q0012080040007F3Q001208004100803Q001208004200813Q001208004300823Q001208004400833Q001208004500843Q001208004600853Q001208004700863Q001208004800874Q005D003E000A000100122F003F00343Q002038003F003F0035001208004000884Q000F003F0002000200122F004000413Q002038004000400042001208004100893Q0012080042008A4Q001B004000420002001026003F0040004000122F004000413Q002038004000400042001208004100613Q0012080042008B4Q001B004000420002001026003F0043004000122F004000463Q0020380040004000470012080041008A3Q0012080042008A3Q001208004300524Q001B004000430002001026003F00450040003004003F004A004B00122F004000463Q0020380040004000470012080041004D3Q0012080042004D3Q0012080043004D4Q001B004000430002001026003F004C004000122F0040008C3Q00203800400040008D2Q00030041003E3Q0012080042008E4Q001B004000420002001026003F0057004000122F004000463Q0020380040004000470012080041004D3Q0012080042004D3Q0012080043004D4Q001B004000430002001026003F0059004000122F0040002D3Q00203800400040005A00203800400040008F001026003F005A0040003004003F00900091001026003F003A001300122F004000343Q0020380040004000350012080041005D4Q000F00400002000200122F004100413Q002038004100410042001208004200923Q0012080043008A4Q001B00410043000200102600400040004100122F004100413Q002038004100410042001208004200933Q0012080043008B4Q001B00410043000200102600400043004100122F004100463Q002038004100410047001208004200943Q001208004300943Q001208004400954Q001B0041004400020010260040004500410030040040004A004B00122F004100463Q0020380041004100470012080042004D3Q0012080043004D3Q0012080044004D4Q001B0041004400020010260040004C004100300400400057009600122F004100463Q0020380041004100470012080042004D3Q0012080043004D3Q0012080044004D4Q001B00410044000200102600400059004100122F0041002D3Q00203800410041005A00203800410041005B0010260040005A00410030040040005C00060010260040003A001300122F004100343Q002038004100410035001208004200544Q000F00410002000200122F004200413Q002038004200420035001208004300503Q001208004400973Q0012080045001E3Q001208004600984Q001B00420046000200102600410040004200122F004200413Q002038004200420042001208004300613Q001208004400994Q001B00420044000200102600410043004200300400410056005000300400410057009A00122F004200463Q0020380042004200470012080043004D3Q0012080044009B3Q001208004500694Q001B00420045000200102600410059004200122F0042002D3Q00203800420042005A00203800420042009C0010260041005A00420030040041005C00060010260041003A001300122F004200343Q0020380042004200350012080043005D4Q000F00420002000200122F004300413Q002038004300430035001208004400503Q001208004500973Q0012080046001E3Q0012080047008A4Q001B00430047000200102600420040004300122F004300413Q002038004300430042001208004400613Q0012080045009D4Q001B00430045000200102600420043004300122F004300463Q0020380043004300470012080044009E3Q0012080045009F3Q0012080046009F4Q001B0043004600020010260042004500430030040042004A004B00122F004300463Q0020380043004300470012080044004D3Q0012080045004D3Q0012080046004D4Q001B0043004600020010260042004C00430030040042005700A000122F004300463Q0020380043004300470012080044004D3Q0012080045004D3Q0012080046004D4Q001B00430046000200102600420059004300122F0043002D3Q00203800430043005A00203800430043005B0010260042005A00430030040042005C00060010260042003A001300122F004300343Q0020380043004300350012080044003F4Q000F00430002000200122F004400413Q002038004400440042001208004500A13Q001208004600A14Q001B00440046000200102600430040004400122F004400463Q0020380044004400470012080045004D3Q0012080046004D3Q0012080047004D4Q001B00440047000200102600430045004400300400430056001E0030040043004A004B00122F004400463Q0020380044004400470012080045001E3Q0012080046001E3Q0012080047001E4Q001B0044004700020010260043004C0044003004004300A20012003004004300A300610010260043003A00102Q0074004400443Q00122F004500A43Q0006530046000E000100012Q00753Q00444Q000A00450002000100122F004500343Q0020380045004500350012080046003F4Q000F00450002000200122F004600413Q002038004600460042001208004700A53Q001208004800A54Q001B00460048000200102600450040004600122F004600413Q002038004600460035001208004700503Q001208004800A63Q001208004900503Q001208004A00A74Q001B0046004A000200102600450043004600122F004600463Q0020380046004600470012080047001E3Q0012080048001E3Q0012080049001E4Q001B0046004900020010260045004500460030040045005600A80030040045004A004B00122F004600463Q0020380046004600470012080047004D3Q0012080048004D3Q0012080049004D4Q001B0046004900020010260045004C00460010260045003A001000122F004600343Q002038004600460035001208004700544Q000F00460002000200122F004700413Q002038004700470035001208004800503Q0012080049001E3Q001208004A001E3Q001208004B00214Q001B0047004B000200102600460040004700300400460056005000300400460057007A00122F004700463Q0020380047004700470012080048004D3Q0012080049004D3Q001208004A004D4Q001B0047004A000200102600460059004700122F0047002D3Q00203800470047005A00203800470047005B0010260046005A00470030040046005C00060010260046003A004500122F004700343Q0020380047004700350012080048003F4Q000F00470002000200122F004800413Q002038004800480042001208004900A93Q001208004A00A94Q001B0048004A000200102600470040004800122F004800413Q002038004800480035001208004900AA3Q001208004A00AB3Q001208004B00AA3Q001208004C00AB4Q001B0048004C000200102600470043004800122F004800463Q0020380048004800470012080049004D3Q001208004A004D3Q001208004B004D4Q001B0048004B00020010260047004500480030040047004A001E0010260047003A00452Q005500485Q0006530049000F000100062Q00753Q00094Q00753Q00454Q00753Q00074Q00758Q00753Q00054Q00753Q00483Q002038004A3Q00AC002072004A004A00AD000653004C0010000100012Q00753Q00484Q0033004A004C0001000653004A0011000100052Q00753Q00074Q00753Q00184Q00753Q001E4Q00753Q001F4Q00753Q000A3Q000653004B0012000100042Q00753Q00074Q00753Q00184Q00753Q00214Q00753Q00223Q000653004C0013000100042Q00753Q00074Q00753Q00184Q00753Q00364Q00753Q00373Q000653004D0014000100042Q00753Q00074Q00753Q00184Q00753Q00394Q00753Q003A3Q000653004E0015000100042Q00753Q00074Q00753Q00344Q00753Q00184Q00753Q00334Q0055004F3Q0002003004004F00AE00AF003004004F00B000AF00065300500016000100062Q00753Q00074Q00753Q00184Q00753Q003C4Q00753Q003D4Q00753Q004F4Q00753Q00043Q0020380051001D00B10020720051005100AD2Q00030053004A4Q00330051005300010020380051002000B10020720051005100AD2Q00030053004B4Q00330051005300010020380051003500B10020720051005100AD2Q00030053004C4Q00330051005300010020380051003800B10020720051005100AD2Q00030053004D4Q00330051005300010020380051003200B10020720051005100AD2Q00030053004E4Q00330051005300010020380051003B00B10020720051005100AD2Q0003005300504Q003300510053000100065300510017000100022Q00753Q00074Q00753Q000B4Q0003005200514Q0003005300234Q0003005400254Q0003005500243Q0012080056001D3Q001208005700503Q0020380058000700202Q003B005800583Q0020380059000700202Q00330052005900012Q0003005200514Q0003005300264Q0003005400284Q0003005500273Q0012080056001F3Q001208005700503Q0020380058000700202Q003B005800583Q0020380059000700202Q00330052005900012Q0003005200514Q0003005300294Q00030054002B4Q00030055002A3Q001208005600223Q001208005700613Q0012080058001E3Q001208005900B24Q00330052005900012Q0003005200514Q00030053002C4Q00030054002E4Q00030055002D3Q001208005600243Q001208005700613Q0012080058001E3Q001208005900B24Q00330052005900012Q0003005200514Q00030053002F4Q0003005400314Q0003005500303Q001208005600153Q001208005700613Q001208005800213Q001208005900744Q00330052005900012Q001000525Q0020380053001600B10020720053005300AD00065300550018000100052Q00753Q00524Q00753Q00124Q00753Q00134Q00753Q00114Q00753Q00144Q00330053005500010020380053004200B10020720053005300AD00065300550019000100012Q00753Q00134Q00330053005500010020380053004000B10020720053005300AD0006530055001A000100032Q00753Q003F4Q00753Q003E4Q00753Q00414Q00330053005500012Q0074005300533Q0020380054000200B30020720054005400AD0006530056001B000100082Q00753Q00074Q00753Q004A4Q00753Q004B4Q00753Q00134Q00753Q000F4Q00753Q00094Q00753Q000E4Q00753Q00034Q00330054005600010020380054000100B40020720054005400AD0006530056001C0001000C2Q00753Q000B4Q00753Q00094Q00753Q00074Q00753Q000F4Q00753Q000E4Q00753Q00064Q00753Q00534Q00753Q000A4Q00753Q00434Q00753Q00444Q00753Q00454Q00753Q00494Q00330054005600010020380054000500B50020720054005400AD0006530056001D000100012Q00753Q000B4Q003300540056000100122F005400B63Q001208005500B74Q000A0054000200012Q003C3Q00013Q001E3Q00013Q0003093Q0043686172616374657200044Q00217Q0020385Q00012Q005A3Q00024Q003C3Q00017Q00023Q00030E3Q0046696E6446697273744368696C6403103Q0048756D616E6F6964522Q6F745061727400094Q00218Q00133Q000100020006160001000700013Q0004663Q0007000100207200013Q0001001208000300024Q001B0001000300022Q005A000100024Q003C3Q00017Q00023Q0003153Q0046696E6446697273744368696C644F66436C612Q7303083Q0048756D616E6F696400094Q00218Q00133Q000100020006160001000700013Q0004663Q0007000100207200013Q0001001208000300024Q001B0001000300022Q005A000100024Q003C3Q00017Q00033Q0003093Q0057616C6B53702Q656403053Q0053702Q656403093Q004A756D70506F776572000C4Q00218Q00133Q0001000200061F3Q0005000100010004663Q000500012Q003C3Q00014Q0021000100013Q0020380001000100020010263Q000100012Q0021000100013Q0020380001000100030010263Q000300012Q003C3Q00017Q00023Q0003093Q005465616D436865636B03043Q005465616D01134Q002100015Q0006763Q0005000100010004663Q000500012Q001000016Q005A000100024Q0021000100013Q0020380001000100010006480001001000013Q0004663Q0010000100203800013Q00022Q002100025Q00203800020002000200067600010010000100020004663Q001000012Q001000016Q005A000100024Q0010000100014Q005A000100024Q003C3Q00017Q00053Q0003083Q00506F736974696F6E03083Q0056656C6F6369747903073Q00566563746F72332Q033Q006E6577030A3Q0050726564696374696F6E01173Q00061F3Q0004000100010004663Q000400012Q0074000100014Q005A000100024Q002100016Q001300010001000200061F0001000A000100010004663Q000A000100203800023Q00012Q005A000200023Q00203800023Q000200061F00020010000100010004663Q0010000100122F000200033Q0020380002000200042Q001300020001000200203800033Q00012Q0021000400013Q0020380004000400052Q00540004000200042Q004C0003000300042Q005A000300024Q003C3Q00017Q00053Q0003063Q00434672616D65030B3Q005269676874566563746F7203073Q00584F2Q6673657403083Q005570566563746F7203073Q00594F2Q6673657401154Q002100016Q000300026Q000F00010002000200061F00010007000100010004663Q000700012Q0074000200024Q005A000200024Q0021000200013Q0020380002000200010020380003000200022Q0021000400023Q0020380004000400032Q00540003000300042Q004C0003000100030020380004000200042Q0021000500023Q0020380005000500052Q00540004000400052Q004C0003000300042Q005A000300024Q003C3Q00017Q00103Q002Q033Q00464F5603063Q00697061697273030A3Q00476574506C617965727303093Q00436861726163746572030E3Q0046696E6446697273744368696C6403083Q004C6F636B5061727403103Q0048756D616E6F6964522Q6F745061727403143Q00576F726C64546F56696577706F7274506F696E7403083Q00506F736974696F6E03073Q00566563746F72322Q033Q006E657703013Q005803013Q0059030C3Q0056696577706F727453697A65027Q004003093Q004D61676E6974756465003E4Q00218Q00133Q0001000200061F3Q0006000100010004663Q000600012Q0074000100014Q005A000100024Q0074000100014Q0021000200013Q00203800020002000100122F000300024Q0021000400023Q0020720004000400032Q0020000400054Q000100033Q00050004663Q003A00012Q0021000800034Q0003000900074Q000F00080002000200061F00080015000100010004663Q001500010004663Q003A000100203800080007000400061F00080019000100010004663Q001900010004663Q003A00010020720009000800052Q0021000B00013Q002038000B000B00062Q001B0009000B000200061F00090022000100010004663Q00220001002072000900080005001208000B00074Q001B0009000B000200061F00090025000100010004663Q002500010004663Q003A00012Q0021000A00043Q002072000A000A0008002038000C000900092Q000D000A000C000B00061F000B002C000100010004663Q002C00010004663Q003A000100122F000C000A3Q002038000C000C000B002038000D000A000C002038000E000A000D2Q001B000C000E00022Q0021000D00043Q002038000D000D000E00206F000D000D000F2Q0045000C000C000D002038000C000C001000065F000C003A000100020004663Q003A00012Q00030002000C4Q0003000100093Q0006050003000F000100020004663Q000F00012Q005A000100024Q003C3Q00017Q00263Q0003083Q00496E7374616E63652Q033Q006E6577030A3Q005465787442752Q746F6E03043Q0053697A6503053Q005544696D32030A3Q0066726F6D4F2Q66736574026Q00444003083Q00506F736974696F6E03103Q004261636B67726F756E64436F6C6F723303063Q00436F6C6F723303073Q0066726F6D524742025Q00804B40025Q00C05240030F3Q00426F7264657253697A65506978656C027Q0040030C3Q00426F72646572436F6C6F7233025Q00E06F4003043Q0054657874034Q0003063Q00506172656E7403053Q004672616D65026Q003840026Q00E03F026Q0028C003163Q004261636B67726F756E645472616E73706172656E6379026Q00F03F03093Q00546578744C6162656C026Q006940026Q00484003063Q00203A204F2Q46030E3Q005465787458416C69676E6D656E7403043Q00456E756D03043Q004C656674030A3Q0054657874436F6C6F723303043Q00466F6E74030A3Q00476F7468616D426F6C64030A3Q00546578745363616C65642Q0103713Q00122F000300013Q002038000300030002001208000400034Q000F00030002000200122F000400053Q002038000400040006001208000500073Q001208000600074Q001B00040006000200102600030004000400122F000400053Q0020380004000400062Q000300056Q0003000600014Q001B00040006000200102600030008000400122F0004000A3Q00203800040004000B0012080005000C3Q0012080006000C3Q0012080007000D4Q001B0004000700020010260003000900040030040003000E000F00122F0004000A3Q00203800040004000B001208000500113Q001208000600113Q001208000700114Q001B0004000700020010260003001000040030040003001200132Q002100045Q00102600030014000400122F000400013Q002038000400040002001208000500154Q000F00040002000200122F000500053Q002038000500050006001208000600163Q001208000700164Q001B00050007000200102600040004000500122F000500053Q002038000500050002001208000600173Q001208000700183Q001208000800173Q001208000900184Q001B00050009000200102600040008000500122F0005000A3Q00203800050005000B001208000600113Q001208000700113Q001208000800114Q001B00050008000200102600040009000500300400040019001A0030040004000E000F00122F0005000A3Q00203800050005000B001208000600113Q001208000700113Q001208000800114Q001B00050008000200102600040010000500102600040014000300122F000500013Q0020380005000500020012080006001B4Q000F00050002000200122F000600053Q0020380006000600060012080007001C3Q001208000800074Q001B00060008000200102600050004000600122F000600053Q00203800060006000600202700073Q001D2Q0003000800014Q001B00060008000200102600050008000600300400050019001A2Q0003000600023Q0012080007001E4Q003600060006000700102600050012000600122F000600203Q00203800060006001F0020380006000600210010260005001F000600122F0006000A3Q00203800060006000B001208000700113Q001208000800113Q001208000900114Q001B00060009000200102600050022000600122F000600203Q0020380006000600230020380006000600240010260005002300060030040005002500262Q002100065Q0010260005001400062Q0003000600034Q0003000700044Q0003000800054Q000B000600024Q003C3Q00017Q00033Q0003163Q004261636B67726F756E645472616E73706172656E6379028Q00026Q00F03F02083Q0006480001000500013Q0004663Q00050001001208000200023Q00061F00020006000100010004663Q00060001001208000200033Q0010263Q000100022Q003C3Q00017Q00193Q0003083Q00496E7374616E63652Q033Q006E657703093Q00546578744C6162656C03043Q0053697A6503053Q005544696D32030A3Q0066726F6D4F2Q66736574026Q004E40026Q00444003083Q00506F736974696F6E03163Q004261636B67726F756E645472616E73706172656E6379026Q00F03F03043Q0054657874030E3Q005465787458416C69676E6D656E7403043Q00456E756D03043Q004C656674030A3Q0054657874436F6C6F723303063Q00436F6C6F723303073Q0066726F6D524742026Q006940025Q00E06F4003043Q00466F6E74030A3Q00476F7468616D426F6C64030A3Q00546578745363616C65642Q0103063Q00506172656E7403263Q00122F000300013Q002038000300030002001208000400034Q000F00030002000200122F000400053Q002038000400040006001208000500073Q001208000600084Q001B00040006000200102600030004000400122F000400053Q0020380004000400062Q000300056Q0003000600014Q001B0004000600020010260003000900040030040003000A000B0010260003000C000200122F0004000E3Q00203800040004000D00203800040004000F0010260003000D000400122F000400113Q002038000400040012001208000500133Q001208000600133Q001208000700144Q001B00040007000200102600030010000400122F0004000E3Q0020380004000400150020380004000400160010260003001500040030040003001700182Q002100045Q0010260003001900042Q005A000300024Q003C3Q00017Q001A3Q0003083Q00496E7374616E63652Q033Q006E6577030A3Q005465787442752Q746F6E03043Q0053697A6503053Q005544696D32030A3Q0066726F6D4F2Q66736574026Q00444003083Q00506F736974696F6E03103Q004261636B67726F756E64436F6C6F723303063Q00436F6C6F723303073Q0066726F6D524742025Q00405540025Q00804640030F3Q00426F7264657253697A65506978656C027Q0040030C3Q00426F72646572436F6C6F7233025Q00E06F4003043Q005465787403013Q002D030A3Q0054657874436F6C6F723303043Q00466F6E7403043Q00456E756D030A3Q00476F7468616D426F6C64030A3Q00546578745363616C65642Q0103063Q00506172656E7402303Q00122F000200013Q002038000200020002001208000300034Q000F00020002000200122F000300053Q002038000300030006001208000400073Q001208000500074Q001B00030005000200102600020004000300122F000300053Q0020380003000300062Q000300046Q0003000500014Q001B00030005000200102600020008000300122F0003000A3Q00203800030003000B0012080004000C3Q0012080005000D3Q0012080006000D4Q001B0003000600020010260002000900030030040002000E000F00122F0003000A3Q00203800030003000B001208000400113Q001208000500113Q001208000600114Q001B00030006000200102600020010000300300400020012001300122F0003000A3Q00203800030003000B001208000400113Q001208000500113Q001208000600114Q001B00030006000200102600020014000300122F000300163Q0020380003000300150020380003000300170010260002001500030030040002001800192Q002100035Q0010260002001A00032Q005A000200024Q003C3Q00017Q001A3Q0003083Q00496E7374616E63652Q033Q006E6577030A3Q005465787442752Q746F6E03043Q0053697A6503053Q005544696D32030A3Q0066726F6D4F2Q66736574026Q00444003083Q00506F736974696F6E03103Q004261636B67726F756E64436F6C6F723303063Q00436F6C6F723303073Q0066726F6D524742025Q00804640025Q00405540030F3Q00426F7264657253697A65506978656C027Q0040030C3Q00426F72646572436F6C6F7233025Q00E06F4003043Q005465787403013Q002B030A3Q0054657874436F6C6F723303043Q00466F6E7403043Q00456E756D030A3Q00476F7468616D426F6C64030A3Q00546578745363616C65642Q0103063Q00506172656E7402303Q00122F000200013Q002038000200020002001208000300034Q000F00020002000200122F000300053Q002038000300030006001208000400073Q001208000500074Q001B00030005000200102600020004000300122F000300053Q0020380003000300062Q000300046Q0003000500014Q001B00030005000200102600020008000300122F0003000A3Q00203800030003000B0012080004000C3Q0012080005000D3Q0012080006000C4Q001B0003000600020010260002000900030030040002000E000F00122F0003000A3Q00203800030003000B001208000400113Q001208000500113Q001208000600114Q001B00030006000200102600020010000300300400020012001300122F0003000A3Q00203800030003000B001208000400113Q001208000500113Q001208000600114Q001B00030006000200102600020014000300122F000300163Q0020380003000300150020380003000300170010260002001500030030040002001800192Q002100035Q0010260002001A00032Q005A000200024Q003C3Q00017Q00173Q0003083Q00496E7374616E63652Q033Q006E657703093Q00546578744C6162656C03043Q0053697A6503053Q005544696D32030A3Q0066726F6D4F2Q66736574026Q004940026Q00444003083Q00506F736974696F6E03163Q004261636B67726F756E645472616E73706172656E6379026Q00F03F03043Q0054657874030A3Q0054657874436F6C6F723303063Q00436F6C6F723303073Q0066726F6D524742026Q005E40025Q00E06F4003043Q00466F6E7403043Q00456E756D030A3Q00476F7468616D426F6C64030A3Q00546578745363616C65642Q0103063Q00506172656E7404243Q00122F000400013Q002038000400040002001208000500034Q000F00040002000200122F000500053Q00203800050005000600061400060009000100030004663Q00090001001208000600073Q001208000700084Q001B00050007000200102600040004000500122F000500053Q0020380005000500062Q000300066Q0003000700014Q001B0005000700020010260004000900050030040004000A000B0010260004000C000200122F0005000E3Q00203800050005000F001208000600103Q001208000700113Q001208000800104Q001B0005000800020010260004000D000500122F000500133Q0020380005000500120020380005000500140010260004001200050030040004001500162Q002100055Q0010260004001700052Q005A000400024Q003C3Q00017Q000F3Q0003073Q0044726177696E672Q033Q006E657703063Q00436972636C6503093Q00546869636B6E652Q73026Q00F03F03053Q00436F6C6F7203063Q00436F6C6F723303073Q0066726F6D524742025Q00E06F40026Q004E40030C3Q005472616E73706172656E637903083Q004E756D5369646573026Q00504003073Q0056697369626C65012Q00113Q00122F3Q00013Q0020385Q0002001208000100034Q000F3Q000200020030043Q0004000500122F000100073Q002038000100010008001208000200093Q0012080003000A3Q0012080004000A4Q001B0001000400020010263Q000600010030043Q000B00050030043Q000C000D0030043Q000E000F2Q003A8Q003C3Q00017Q002B3Q0003083Q00506F736974696F6E03063Q00434672616D65030A3Q004C2Q6F6B566563746F7203043Q006D61746803053Q006174616E3203013Q005803013Q005A030C3Q004162736F6C75746553697A65027Q004003013Q0059026Q002440030A3Q00526164617252616E676503063Q00697061697273030A3Q00476574506C617965727303093Q00436861726163746572030E3Q0046696E6446697273744368696C6403103Q0048756D616E6F6964522Q6F745061727403073Q0056697369626C65010003083Q00496E7374616E63652Q033Q006E657703053Q004672616D6503043Q0053697A6503053Q005544696D32030A3Q0066726F6D4F2Q66736574026Q00204003103Q004261636B67726F756E64436F6C6F723303043Q005465616D03063Q00436F6C6F723303073Q0066726F6D524742026Q005440026Q006940025Q00E06F40030F3Q00426F7264657253697A65506978656C028Q0003063Q005A496E646578026Q00144003063Q00506172656E7403093Q004D61676E69747564652Q033Q00636F732Q033Q0073696E2Q01026Q001040008B4Q00218Q00133Q0001000200061F3Q0005000100010004663Q000500012Q003C3Q00013Q00203800013Q000100203800023Q000200203800020002000300122F000300043Q0020380003000300050020380004000200062Q003B000400043Q0020380005000200072Q003B000500054Q001B0003000500022Q0021000400013Q00203800040004000800203800040004000600206F0004000400092Q0021000500013Q00203800050005000800203800050005000A00206F00050005000900204000060004000B2Q0021000700023Q00203800070007000C2Q001A00060006000700122F0007000D4Q0021000800033Q00207200080008000E2Q0020000800094Q000100073Q00090004663Q008800012Q0021000C00043Q000676000B00250001000C0004663Q002500010004663Q00880001002038000C000B000F000616000D002B0001000C0004663Q002B0001002072000D000C0010001208000F00114Q001B000D000F00022Q0021000E00054Q0012000E000E000B00061F000D0033000100010004663Q00330001000648000E008800013Q0004663Q00880001003004000E001200130004663Q0088000100061F000E005A000100010004663Q005A000100122F000F00143Q002038000F000F0015001208001000164Q000F000F000200022Q0003000E000F3Q00122F000F00183Q002038000F000F00190012080010001A3Q0012080011001A4Q001B000F00110002001026000E0017000F002038000F000B001C2Q0021001000043Q00203800100010001C000676000F004D000100100004663Q004D000100122F000F001D3Q002038000F000F001E0012080010001F3Q001208001100203Q001208001200214Q001B000F0012000200061F000F0053000100010004663Q0053000100122F000F001D3Q002038000F000F001E001208001000213Q0012080011001F3Q0012080012001F4Q001B000F00120002001026000E001B000F003004000E00220023003004000E002400252Q0021000F00013Q001026000E0026000F2Q0021000F00054Q0015000F000B000E002038000F000D00012Q0045000F000F00010020380010000F00272Q0021001100023Q00203800110011000C00066300100087000100110004663Q008700010020380011000F000600122F001200043Q0020380012001200282Q0003001300034Q000F0012000200022Q00540011001100120020380012000F000700122F001300043Q0020380013001300292Q0003001400034Q000F0013000200022Q00540012001200132Q00450011001100120020380012000F000600122F001300043Q0020380013001300292Q0003001400034Q000F0013000200022Q00540012001200130020380013000F000700122F001400043Q0020380014001400282Q0003001500034Q000F0014000200022Q00540013001300142Q004C001200120013003004000E0012002A00122F001300183Q0020380013001300192Q00540014001100062Q004C00140004001400204000140014002B2Q00540015001200062Q004C00150005001500204000150015002B2Q001B001300150002001026000E000100130004663Q00880001003004000E0012001300060500070021000100020004663Q002100012Q003C3Q00017Q00023Q0003073Q0044657374726F790001094Q002100016Q0012000100013Q0006480001000800013Q0004663Q000800010020720002000100012Q000A0002000200012Q002100025Q00206500023Q00022Q003C3Q00017Q00063Q0003063Q0041696D626F7403043Q0054657874030B3Q0041494D204C4F434B203A2003023Q004F4E2Q033Q004F2Q46030A3Q004175746F526F74617465001F4Q00218Q002100015Q0020380001000100012Q0022000100013Q0010263Q000100012Q00213Q00014Q0021000100024Q002100025Q0020380002000200012Q00333Q000200012Q00213Q00033Q001208000100034Q002100025Q0020380002000200010006480002001300013Q0004663Q00130001001208000200043Q00061F00020014000100010004663Q00140001001208000200054Q00360001000100020010263Q000200012Q00213Q00044Q00133Q000100020006483Q001E00013Q0004663Q001E00012Q002100015Q0020380001000100012Q0022000100013Q0010263Q000600012Q003C3Q00017Q00053Q0003093Q0053696C656E7441696D03043Q0054657874030D3Q0053494C454E542041494D203A2003023Q004F4E2Q033Q004F2Q4600174Q00218Q002100015Q0020380001000100012Q0022000100013Q0010263Q000100012Q00213Q00014Q0021000100024Q002100025Q0020380002000200012Q00333Q000200012Q00213Q00033Q001208000100034Q002100025Q0020380002000200010006480002001300013Q0004663Q00130001001208000200043Q00061F00020014000100010004663Q00140001001208000200054Q00360001000100020010263Q000200012Q003C3Q00017Q00073Q0003053Q00536C69646503043Q005465787403083Q00534C494445203A2003023Q004F4E2Q033Q004F2Q4603083Q00536C69646556656C03073Q0044657374726F7900234Q00218Q002100015Q0020380001000100012Q0022000100013Q0010263Q000100012Q00213Q00014Q0021000100024Q002100025Q0020380002000200012Q00333Q000200012Q00213Q00033Q001208000100034Q002100025Q0020380002000200010006480002001300013Q0004663Q00130001001208000200043Q00061F00020014000100010004663Q00140001001208000200054Q00360001000100020010263Q000200012Q00217Q0020385Q000100061F3Q0022000100010004663Q0022000100122F3Q00063Q0006483Q002000013Q0004663Q0020000100122F3Q00063Q0020725Q00072Q000A3Q000200012Q00747Q0012603Q00064Q003C3Q00017Q00053Q0003053Q00526164617203043Q005465787403083Q005241444152203A2003023Q004F4E2Q033Q004F2Q4600174Q00218Q002100015Q0020380001000100012Q0022000100013Q0010263Q000100012Q00213Q00014Q0021000100024Q002100025Q0020380002000200012Q00333Q000200012Q00213Q00033Q001208000100034Q002100025Q0020380002000200010006480002001300013Q0004663Q00130001001208000200043Q00061F00020014000100010004663Q00140001001208000200054Q00360001000100020010263Q000200012Q003C3Q00017Q00053Q0003083Q004C6F636B5061727403043Q004865616403103Q0048756D616E6F6964522Q6F745061727403043Q0054657874030C3Q004C4F434B2050415254203A20001A4Q00218Q002100015Q00203800010001000100260C00010008000100020004663Q00080001001208000100033Q00061F00010009000100010004663Q00090001001208000100023Q0010263Q000100012Q00213Q00013Q001208000100054Q002100025Q0020380002000200012Q00360001000100020010263Q000400012Q00213Q00024Q0021000100034Q002100025Q00203800020002000100262C00020017000100030004663Q001700012Q005C00026Q0010000200014Q00333Q000200012Q003C3Q00017Q00063Q0003083Q00465053422Q6F737403043Q0054657874030C3Q0046505320422Q4F5354203A2003023Q004F4E2Q033Q004F2Q4603053Q007063612Q6C001D4Q00218Q002100015Q0020380001000100012Q0022000100013Q0010263Q000100012Q00213Q00014Q0021000100024Q002100025Q0020380002000200012Q00333Q000200012Q00213Q00033Q001208000100034Q002100025Q0020380002000200010006480002001300013Q0004663Q00130001001208000200043Q00061F00020014000100010004663Q00140001001208000200054Q00360001000100020010263Q0002000100122F3Q00063Q00065300013Q000100032Q002D8Q002D3Q00044Q002D3Q00054Q000A3Q000200012Q003C3Q00013Q00013Q00093Q0003083Q00465053422Q6F7374030C3Q005175616C6974794C6576656C0003083Q0073652Q74696E677303093Q0052656E646572696E6703073Q00536861646F7773030D3Q00476C6F62616C536861646F7773026Q00F03F012Q002A4Q00217Q0020385Q00010006483Q001900013Q0004663Q001900012Q00213Q00013Q0020385Q000200260C3Q0012000100030004663Q001200012Q00213Q00013Q00122F000100044Q00130001000100020020380001000100050020380001000100020010263Q000200012Q00213Q00014Q0021000100023Q0020380001000100070010263Q0006000100122F3Q00044Q00133Q000100020020385Q00050030043Q000200082Q00213Q00023Q0030043Q000700090004663Q002900012Q00213Q00013Q0020385Q00020006483Q002900013Q0004663Q0029000100122F3Q00044Q00133Q000100020020385Q00052Q0021000100013Q0020380001000100020010263Q000200012Q00213Q00024Q0021000100013Q0020380001000100060010263Q000700012Q00213Q00013Q0030043Q000200032Q003C3Q00017Q00023Q0003113Q004D6F75736542752Q746F6E31436C69636B03073Q00436F2Q6E65637407153Q00203800073Q000100207200070007000200065300093Q000100062Q002D8Q00753Q00034Q00753Q00054Q00753Q00044Q00753Q00024Q002D3Q00014Q003300070009000100203800070001000100207200070007000200065300090001000100062Q002D8Q00753Q00034Q00753Q00064Q00753Q00044Q00753Q00024Q002D3Q00014Q00330007000900012Q003C3Q00013Q00023Q00043Q0003043Q006D6174682Q033Q006D617803043Q005465787403083Q00746F737472696E6700164Q00218Q0021000100013Q00122F000200013Q0020380002000200022Q0021000300024Q002100046Q0021000500014Q00120004000400052Q0021000500034Q00450004000400052Q001B0002000400022Q00153Q000100022Q00213Q00043Q00122F000100044Q002100026Q0021000300014Q00120002000200032Q000F0001000200020010263Q000300012Q00213Q00054Q00623Q000100012Q003C3Q00017Q00043Q0003043Q006D6174682Q033Q006D696E03043Q005465787403083Q00746F737472696E6700164Q00218Q0021000100013Q00122F000200013Q0020380002000200022Q0021000300024Q002100046Q0021000500014Q00120004000400052Q0021000500034Q004C0004000400052Q001B0002000400022Q00153Q000100022Q00213Q00043Q00122F000100044Q002100026Q0021000300014Q00120002000200032Q000F0001000200020010263Q000300012Q00213Q00054Q00623Q000100012Q003C3Q00017Q00073Q00026Q002Q4003043Q0053697A6503053Q005544696D32030A3Q0066726F6D4F2Q6673657403063Q00697061697273030B3Q004765744368696C6472656E03073Q0056697369626C6500204Q00218Q00228Q003A8Q00217Q0006483Q000900013Q0004663Q000900010012083Q00013Q00061F3Q000A000100010004663Q000A00012Q00213Q00014Q0021000100023Q00122F000200033Q0020380002000200042Q0021000300034Q000300046Q001B00020004000200102600010002000200122F000100054Q0021000200023Q0020720002000200062Q0020000200034Q000100013Q00030004663Q001D00012Q0021000600043Q0006110005001D000100060004663Q001D00012Q002100066Q0022000600063Q00102600050007000600060500010017000100020004663Q001700012Q003C3Q00017Q00023Q0003073Q0056697369626C65012Q00034Q00217Q0030043Q000100022Q003C3Q00017Q000B3Q0003043Q005465787403063Q00676D6174636803073Q005B5E2C25735D2B03053Q007461626C6503063Q00696E73657274028Q0003063Q00697061697273030E3Q005B2B5D205265642Q656D696E672003093Q0020636F6465733Q2E03043Q007461736B03053Q00737061776E00294Q00558Q002100015Q002038000100010001002072000100010002001208000300034Q000D0001000300030004663Q000C000100122F000500043Q0020380005000500052Q000300066Q0003000700044Q003300050007000100060500010007000100010004663Q000700012Q005100015Q00260C0001001C000100060004663Q001C000100122F000100074Q0021000200014Q00090001000200030004663Q001A000100122F000600043Q0020380006000600052Q000300076Q0003000800054Q003300060008000100060500010015000100020004663Q001500012Q0021000100023Q001208000200084Q005100035Q001208000400094Q003600020002000400102600010001000200122F0001000A3Q00203800010001000B00065300023Q000100022Q00758Q002D3Q00024Q000A0001000200012Q003C3Q00013Q00013Q00073Q0003063Q0069706169727303053Q007063612Q6C03043Q007461736B03043Q0077616974029A5Q99D93F03043Q005465787403263Q005B4F4B5D2046696E69736865642E20436865636B206368617420666F7220726573756C74732E00123Q00122F3Q00014Q002100016Q00093Q000200020004663Q000D000100122F000500023Q00065300063Q000100012Q00753Q00044Q000A00050002000100122F000500033Q002038000500050004001208000600054Q000A0005000200012Q004700035Q0006053Q0004000100020004663Q000400012Q00213Q00013Q0030043Q000600072Q003C3Q00013Q00013Q00083Q0003043Q0067616D65030A3Q004765745365727669636503113Q005265706C69636174656453746F72616765030E3Q0046696E6446697273744368696C6403073Q0052656D6F746573030A3Q00436F64655375626D697403043Q00436F6465030A3Q004669726553657276657200173Q00122F3Q00013Q0020725Q0002001208000200034Q001B3Q000200020020725Q0004001208000200054Q001B3Q000200020006483Q001600013Q0004663Q0016000100207200013Q0004001208000300064Q001B00010003000200061F00010011000100010004663Q0011000100207200013Q0004001208000300074Q001B0001000300020006480001001600013Q0004663Q001600010020720002000100082Q002100046Q00330002000400012Q003C3Q00017Q00143Q0003073Q004B6579436F646503093Q0041696D626F744B657903093Q0053696C656E744B657903073Q00486964654B657903073Q0056697369626C65030D3Q0055736572496E7075745479706503043Q00456E756D030C3Q004D6F75736542752Q746F6E3103093Q0053696C656E7441696D03063Q00434672616D6503063Q006C2Q6F6B417403083Q00506F736974696F6E03043Q007461736B03043Q007761697402B81E85EB51B8AE3F03063Q0043726561746503093Q0054772Q656E496E666F2Q033Q006E6577029A5Q99B93F03043Q00506C6179024A3Q0006480001000300013Q0004663Q000300012Q003C3Q00013Q00203800023Q00012Q002100035Q0020380003000300020006760002000B000100030004663Q000B00012Q0021000200014Q00620002000100010004663Q0049000100203800023Q00012Q002100035Q00203800030003000300067600020013000100030004663Q001300012Q0021000200024Q00620002000100010004663Q0049000100203800023Q00012Q002100035Q0020380003000300040006760002001E000100030004663Q001E00012Q0021000200034Q0021000300033Q0020380003000300052Q0022000300033Q0010260002000500030004663Q0049000100203800023Q000600122F000300073Q00203800030003000600203800030003000800067600020049000100030004663Q004900012Q002100025Q0020380002000200090006480002004900013Q0004663Q004900012Q0021000200044Q00130002000100022Q0021000300054Q00130003000100020006480002004900013Q0004663Q004900010006480003004900013Q0004663Q0049000100203800040003000A00122F0005000A3Q00203800050005000B00203800060003000C2Q0021000700064Q0003000800024Q0020000700084Q005600053Q00020010260003000A000500122F0005000D3Q00203800050005000E0012080006000F4Q000A0005000200012Q0021000500073Q0020720005000500102Q0003000700033Q00122F000800113Q002038000800080012001208000900134Q000F0008000200022Q005500093Q00010010260009000A00042Q001B0005000900020020720005000500142Q000A0005000200012Q003C3Q00017Q00273Q0003063Q0041696D626F7403063Q00434672616D6503043Q004C65727003063Q006C2Q6F6B417403083Q00506F736974696F6E030A3Q00536D2Q6F74686E652Q73026Q66D63F03053Q00536C69646503063Q00506172656E7403083Q00496E7374616E63652Q033Q006E6577030C3Q00426F647956656C6F6369747903083Q004D6178466F72636503073Q00566563746F7233025Q006AF840028Q00030D3Q004D6F7665446972656374696F6E03093Q004D61676E6974756465029A5Q99B93F03083Q0056656C6F63697479030A3Q00536C69646553702Q656403013Q005802713D0AD7A370ED3F03013Q005A03073Q0044657374726F7903093Q0053696C656E7441696D03143Q00576F726C64546F56696577706F7274506F696E7403073Q0056697369626C652Q0103053Q005544696D32030A3Q0066726F6D4F2Q66736574026Q001C4003013Q00590100030C3Q0056696577706F727453697A65027Q004003063Q005261646975732Q033Q00464F5603053Q00526164617200B74Q00218Q00623Q000100012Q00213Q00014Q00133Q000100022Q0021000100023Q0020380001000100010006480001002A00013Q0004663Q002A00012Q0021000100034Q00130001000100020006480001002A00013Q0004663Q002A00010006483Q002A00013Q0004663Q002A00012Q0021000200044Q0003000300014Q000F00020002000200203800033Q000200207200030003000300122F000500023Q00203800050005000400203800063Q00052Q0003000700024Q001B0005000700022Q0021000600023Q0020380006000600062Q001B0003000600020010263Q000200032Q0021000300054Q0021000400053Q00203800040004000200207200040004000300122F000600023Q0020380006000600042Q0021000700053Q0020380007000700020020380007000700052Q0003000800024Q001B000600080002001208000700074Q001B0004000700020010260003000200042Q0021000100023Q0020380001000100080006480001006800013Q0004663Q006800010006483Q006800013Q0004663Q006800012Q0021000100063Q0006480001003700013Q0004663Q003700012Q0021000100063Q00203800010001000900061F00010046000100010004663Q0046000100122F0001000A3Q00203800010001000B0012080002000C4Q000F0001000200022Q003A000100064Q0021000100063Q00122F0002000E3Q00203800020002000B0012080003000F3Q001208000400103Q0012080005000F4Q001B0002000500020010260001000D00022Q0021000100063Q001026000100094Q0021000100074Q00130001000100020006480001004D00013Q0004663Q004D000100203800020001001100061F00020050000100010004663Q0050000100122F0002000E3Q00203800020002000B2Q0013000200010002002038000300020012000E4B00130059000100030004663Q005900012Q0021000300064Q0021000400023Q0020380004000400152Q00540004000200040010260003001400040004663Q007000012Q0021000300063Q00122F0004000E3Q00203800040004000B2Q0021000500063Q002038000500050014002038000500050016002071000500050017001208000600104Q0021000700063Q0020380007000700140020380007000700180020710007000700172Q001B0004000700020010260003001400040004663Q007000012Q0021000100063Q0006480001007000013Q0004663Q007000012Q0021000100063Q0020720001000100192Q000A0001000200012Q0074000100014Q003A000100064Q0021000100023Q00203800010001001A0006480001009500013Q0004663Q009500012Q0021000100034Q00130001000100020006480001009200013Q0004663Q009200012Q0021000200053Q00207200020002001B2Q0021000400044Q0003000500014Q0020000400054Q000100023Q00030006480003008F00013Q0004663Q008F0001002038000400020018000E4B0010008F000100040004663Q008F00012Q0021000400083Q0030040004001C001D2Q0021000400083Q00122F0005001E3Q00203800050005001F0020380006000200160020400006000600200020380007000200210020400007000700202Q001B0005000700020010260004000500050004663Q009700012Q0021000400083Q0030040004001C00220004663Q009700012Q0021000200083Q0030040002001C00220004663Q009700012Q0021000100083Q0030040001001C00222Q0021000100093Q000648000100AB00013Q0004663Q00AB00012Q0021000100094Q0021000200053Q00203800020002002300206F0002000200240010260001000500022Q0021000100094Q0021000200023Q0020380002000200260010260001002500022Q0021000100094Q0021000200023Q00203800020002000100061F000200AA000100010004663Q00AA00012Q0021000200023Q00203800020002001A0010260001001C00022Q0021000100023Q002038000100010027000648000100B400013Q0004663Q00B400012Q00210001000A3Q0030040001001C001D2Q00210001000B4Q00620001000100010004663Q00B600012Q00210001000A3Q0030040001001C00222Q003C3Q00017Q00033Q0003043Q007461736B03043Q0077616974026Q00F03F00073Q00122F3Q00013Q0020385Q0002001208000100034Q000A3Q000200012Q00218Q00623Q000100012Q003C3Q00017Q00", GetFEnv(), ...);
